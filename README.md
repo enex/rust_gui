@@ -1,42 +1,36 @@
 # GUI for Rust
 
-Little an simple gui library for rust which is designed very close to the react
-gui and uses rust-piston as backend library for rendering and sdl2 for windowing.
-But this will may change in the future, without any api changes.
-
-## Tree of the GUI
-- Root
-  - 1.Child
-  - 2.Child
-    - 2.Child-1.Child
-    - 2.Child-2.Child
-  - 3.Child
-  - 4.Child
-  - 5.Child
-
-Werend des renderns wird auf dem stack der bereich für die gui informationen reserviert und
-die Komponenten erzeugt. Wenn komponenten Event listener registrieren, oder mit viel
-aufwand verbunden sind werden diese kopiert und in einem externen Baum gespeichert.
-Lößt nun einer dießer Events aus, wird die registrierte Funktion mit event-beschreibung aufgerufen.
-Wird hierbei der Zustand der Komponente verändert, wird diese neu gezeichnet.
+Little an simple gui library for rust inspired by react.
+gui and uses cairo as backend library for rendering.
+But this will may change in the future.
 
 ## Konzept
 
-Ein Programm besteht aus mehreren Komponenten. Jedes dießer komponenten kann dafür sorgen, das
+Ein Programm besteht aus mehreren Komponenten. Jedes dieser komponenten kann dafür sorgen, das
 es gecachd wird, und das es einen Zustand besitzt.
 
-### Initiales Rendern
+Der Baum mit den Componenten, wird allerdings nicht beahalten, sondern wenn benötigt lazy
+erstellt. Das heißt es wird kein zusätzlicher Speicherplatz benötigt wenn sich nichts ändert,
+und Änderungen können schnell und einfach geschehen.
 
-Beim initialen Rendern werden render funktion der Haupt app aufgerufen und ein Baum konstruiert der alle Knoten beinhalted, die entweder
- - Eine Eigenen Zustand haben
- - Events empfangen
- - gecachte ergebnise haben
-Alle weiteren Nodes werden jedes mal neu gezeichnet und es ist nicht nötig ihren Zustand zu speichern, somit ist der speicherverbrauch sehr gering und die Perfomance zimlich hos
+Jedes element besitzt eine Render-funktion. In dieser werden die Elemente initialisiert und an
+den context geschickt. Hierbei bekommt jedes Objekt eine ID um.
 
-### diffing
+# Events
+vom Context selbst werden Events bereitgestellt, die von jedem element aboniert werden könne.
+Wenn eines dieser Events auslöst wird die Render-funktion des gesuchten elements aufgerufen, und
+das Event gehandled.
 
-beim aufrufen der render Funktion werden neue Nodes konstruiert und alte übernommen. Dabei sollen nicht jedes mal neue erstellt, sondern bereits vorhandene Cachs genutzt werden. Ebenso muss der State zugeordnet werden. Dießer Prozess geschieht anhand der Koordinaten und Propertys, oder wenn spezifiziert anhand einer Nummer(aus Performance gründen zu bevorzugen).
+Außerdem können Componenten selbs event bereitstellen. Diese werden vom Vontext verwalted und
+gehen immer vom Child-Element zum Parent-Element, so das das Parent element dieße behandeln kann.
+Events können mit der Funktion `ctx.emit(name: Eq, info: <Info>);` ausgelößst werden. Sie werden
+übertragen, so bald die Funktion beendet ist.
+Überlegung: Event möglicherweiße Als rückgabeparamter ansehen.
 
+# Performance
+Um eine gute performance zu erreichen, können gezeichnete Bereiche gecached werden, so dass sie nur
+einmal gezeichnet werden. das ist mit der Funktion `ctx.cach_all();` für das Ganze lement und mit
+`ctx.cach();` für ein einzelnes Element möglich.
 
 ## Zeichnen
 Es wird immer von oben nach unten gezeichnet das heißt bei der Anordnung ist die Reihenfolge zu
@@ -52,45 +46,29 @@ struct Component{
 impl Element for Component{
     fn draw(); //function to draw raw things, it will be called after render
     fn render(&self, ctx: context) -> Element {
-        ListView::new()
-            .add(Button::new()
-                .text("OK")
-                .onClick(|this| this.test();)
-            ).add(Button::new()
-                .text("No")
-                .onClick(|this| this.abord();)
-            ).add(Button::new()
-                .text("quit")
-                .onClick(|this| this.exit(); )
-            );
+        ctx.add(ListView::new().childs(|ctx|{
+            ctx.add(1,Button::new("OK"),|event|{
+                match event{
+                    Click => self.test()
+                }
+            })
+        }))
 
-        //syntactic shugar to speed up development
-        gui!{
-            ListView{
-                Button{
-                    text: "OK",
-                    on click: {this.test();},
+        gui!(ctx,
+            ListView(){
+                Button("OK")=>{
+                    Click => self.test()
                 }
-                Button{
-                    text: "No",
-                    on click: {this.abord();},
+                Button(text: "No") => {
+                    Click => self.abord()
                 }
-                Button{
-                    text: "quit",
-                    on click: {this.exit();}
+                Button("quit") => {
+                    Click => self.exit()
                 }
             }
-        }
+        );
     }
-
-    #[inline]
-    fn set_state(&mut self, state: Option<()>){
-        self.state = state
-    }
-    #[inline]
-    fn get_state(&self) -> Option<()>{
-        self.state
-    }
+    gui_state!(state, Option<()>);//generates acces functions to the state
 }
 impl Elemen{
     fn exit(){
@@ -99,3 +77,25 @@ impl Elemen{
     //ein paar setter funktionen
 }
 ```
+
+## TODO:
+ - make displaying text possible
+ - make component system work
+ - make event system ready
+ - build some basic components
+   - button
+   - radio
+   - label
+   - lineEdit
+   - numberInput
+   - multilineEdit
+   - Tabs
+   - List
+   - Box-Layout
+ - create macro for easier interaction
+ - animation
+ - caching
+ - state management
+ - documentation
+ - theming
+ - veröffentlichen
