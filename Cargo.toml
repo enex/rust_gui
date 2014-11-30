@@ -1,0 +1,11 @@
+[package]
+
+name = "gui"
+version = "0.0.1"
+authors = ["enex <sive@web.de>"]
+
+[dependencies.cairo]
+git = "https://github.com/enex/rust-cairo"
+
+[dependencies]
+sdl2 = "0.0.6"
