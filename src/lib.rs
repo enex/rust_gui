@@ -1,6 +1,9 @@
-//#![allow(dead_code)]
-#![feature(globs)]
-#![feature(unsafe_destructor)]
+#![crate_name = "gui"]
+#![unstable]
+#![crate_type = "rlib"]
+#![crate_type = "dylib"]
+
+#![feature(macro_rules, globs)]
 
 extern crate libc;
 
@@ -17,7 +20,7 @@ use sdl2::event::{Quit, poll_event};
 //use sdl2::rect::{Rect};
 mod sw;
 
-//pub mod components; //TODO: export gui components
+pub mod components; //TODO: export gui components
 
 /// Struct of a desctop app which is the basic setup
 /// it includes everything nedded for a desktop applicatio
@@ -154,8 +157,15 @@ pub trait Widget<Event>{
     /// In this function only rendering to the screen and atouching event listeners is done
     /// the state of the component gets passed as a imutable reference, so this rutine is not
     /// able to change anything.
-    fn render(&self, ctx: &mut CTX);
+    /// It returns the (width, hight) of the area affected by the render method
+    fn render(&self, ctx: &mut CTX) -> (f64, f64);
 
+    /// Method which is used by the layout engine to get the size of a component
+    /// by default the size will be calculated by using the render function with
+    /// blocked drawing, but if speed matters this function can provide faster information
+    fn size(&self) -> (f64, f64) {
+        (0.0,0.0)
+    }
     /// should this component be cached in its own frame buffer?
     /// if nothing is set it wil be painted each time it is called
     fn do_cach() -> bool{
@@ -165,42 +175,22 @@ pub trait Widget<Event>{
 
 #[cfg(test)]
 mod test{
-    use super::Widget;
-    struct Button{
-        text: String,
-        width: f64,
-        height: f64,
-    }
-    enum ButtonEvent{
-        Click
-    }
-    impl Widget<ButtonEvent> for Button{
-        fn render(&self, ctx: &mut super::CTX) {
-            ctx.draw(|c|{
-                c.set_source_rgb(0.35, 0.35, 0.85);
-                c.rectangle(0.0, 0.0, self.width, self.height);
-                c.fill();
-            });
-            //ctx.add(1,Rect::new(0,0,100,100),None);
-            println!("render");
-        }
-        //fn get_state(&self) -> (){ () }
-    }
-
+    use components::Button;
+    
     #[test]
     fn show(){
         let mut w = super::Window::new("window-test",640,480);
         w.render(|ctx|{
             let b = Button{text:"test1".to_string(), width: 100.0, height: 30.0};
-            ctx.add(1, &b, Some(|evt| println!("click")));
-            ctx.pos = (0.0,32.0);
-            ctx.add(2, &b, None);
-            ctx.pos = (0.0,64.0);
-            ctx.add(3, &b, None);
-            ctx.pos = (0.0,96.0);
-            ctx.add(4, &b, None);
-            ctx.pos = (0.0,128.0);
-            ctx.add(5, &b, None);
+            let (_,height) = ctx.add(1, &b, Some(|evt| println!("click")));
+            ctx.pos = (0.0, ctx.y() + height+2.0);
+            let (_,height) = ctx.add(2, &b, None);
+            ctx.pos = (0.0, ctx.y() + height+2.0);
+            let (_,height) = ctx.add(3, &b, None);
+            ctx.pos = (0.0, ctx.y() + height+2.0);
+            let (_,height) = ctx.add(4, &b, None);
+            ctx.pos = (0.0, ctx.y() + height+2.0);
+            let (_,height) = ctx.add(5, &b, None);
         });
         w.start();//start event loop
         panic!("good");
@@ -230,9 +220,9 @@ impl<'a> CTX<'a>{
     // event: the closure which should be called if the Widget fires an event
     //        normaly widgets use enums which can then be matched an events can be handled
     //        if no event should be catched this should be None
-    pub fn add<Event>(&mut self,id: uint, w: &Widget<Event>, event:Option<|Event|>){
+    pub fn add<Event>(&mut self,id: uint, w: &Widget<Event>, event:Option<|Event|>) -> (f64, f64){
         println!("add");
-        w.render(self);
+        return w.render(self);
         //TODO: event handling strategie überdenken
         //TODO: look for event
         //TODO: call function for event handling
@@ -242,8 +232,19 @@ impl<'a> CTX<'a>{
     }
 
     //emit an event which can be handled by the parent element.
-    pub fn emit<Event>(&mut self, event: Event){
+    pub fn emit<Event: Clone>(&mut self, event: Event){
 
+    }
+
+    #[inline(always)]
+    pub fn x(&self) -> f64{
+        let (x,_) = self.pos;
+        x
+    }
+    #[inline(always)]
+    pub fn y(&self) -> f64{
+        let (_,y) = self.pos;
+        y
     }
 
     //with this function it is possible to mutate the state of the component,
