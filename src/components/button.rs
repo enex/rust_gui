@@ -25,8 +25,17 @@ impl Button{
 
 impl Widget<ButtonEvent> for Button{
     fn render(&self, ctx: &mut CTX) -> (f64, f64) {
+        let mut hover = false;
+        ctx.mouseover((self.width, self.height), |event|{
+            println!("button event: {}", event);
+            hover = true;
+        });
         ctx.draw(|c|{
-            c.set_source_rgb(0.35, 0.35, 0.85);
+            if hover{
+                c.set_source_rgb(0.55, 0.55, 0.95);
+            }else{
+                c.set_source_rgb(0.27, 0.36, 0.93);
+            }
             c.rectangle(0.0, 0.0, self.width, self.height);
             c.fill();
         });
