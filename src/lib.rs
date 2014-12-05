@@ -23,21 +23,28 @@ mod sw;
 
 pub mod components; //TODO: export gui components
 
+//TODO: inline functions in cairo wrapper for better speed
+
 /// Struct of a desctop app which is the basic setup
 /// it includes everything nedded for a desktop applicatio
 pub struct Window{
     delay: uint,//delay betwen event checks default is 10
     pub window: sdl2::video::Window,
+    ctx: Context,//cairo context for drawing
 }
 
 impl Window{
     /// create a new window with given title, width and height
     pub fn new(title: &str, width: int, height: int) -> Window {
         sdl2::init(sdl2::INIT_EVERYTHING);
+
+        let window = sdl2::video::Window::new(title, WindowPos::PosCentered, WindowPos::PosCentered, width, height, OPENGL).unwrap();
+        let mut ctx: Context = Context::new(&mut sw::SurfaceWrapper::from_sdl(window.get_surface().unwrap())).unwrap();
         Window{
             delay: 12,
             // Create a window
-            window: sdl2::video::Window::new(title, WindowPos::PosCentered, WindowPos::PosCentered, width, height, OPENGL).unwrap(),
+            window: window,
+            ctx: ctx,
         }
     }
 
@@ -47,21 +54,26 @@ impl Window{
         use sdl2::event;
 
         {
-            let mut ctx = CTX{
-                window: self,
-                pos: (0.0,0.0),
-            };
+            let none = &Event::None;
+            let mut ctx = CTX::new(self, none, true);
             render(&mut ctx);
         }
+        self.update();
 
         'event : loop {
-            match poll_event() {
+            let e = poll_event();
+            match e {
                 Event::Quit(_) => break 'event,
                 Event::KeyDown(_, _, key_code, scan_code, _,_) => println!("deydown {} {}", key_code, scan_code),
                 Event::KeyUp(_, _, _, _, _, _) => println!("key up"),
                 Event::MouseMotion(_, _, _, _, x, y, xrel, yrel) => {
                     //TODO: get mouse state
-                    println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
+                    //println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
+                    {
+                        let mut ctx = CTX::new(self, &e, true);
+                        render(&mut ctx);
+                    }
+                    self.update();
                 },
                 Event:: Window(_, _, id, d1, d2) => {
                     //TODO: use this event to redraw on size changes and to sleep
@@ -73,83 +85,53 @@ impl Window{
         sdl2::quit();
     }
 
+    /// get the ciro drawing context to draw on it
+    #[inline(always)]
+    pub fn caro_context(&mut self) -> &mut cairo::Context{
+        &mut self.ctx
+    }
+
     /// calls the given function and provides a cairo drawing context
+    #[inline(always)]
     pub fn draw(&mut self, draw_closure: |&mut cairo::Context|){
-        let sdl_surface = self.window.get_surface().unwrap();
-        let mut surface = sw::SurfaceWrapper::from_sdl(sdl_surface);//generate a wrapper around the surface
-        let mut ctx = Context::new(&mut surface).unwrap();//generate the cairo context
+        draw_closure(&mut self.ctx);
+    }
 
-        draw_closure(&mut ctx);
-
+    ///Function to update view to cairo drawing
+    #[inline(always)]
+    pub fn update(&mut self){
         let _ = self.window.update_surface();//surface updaten
     }
 
     /// close the window
+    #[inline(always)]
     pub fn close(&mut self){
         sdl2::quit();
     }
 
     /// set the title of the window
+    #[inline(always)]
     pub fn title(&mut self, val: String){
         self.window.set_title(val.as_slice());
     }
 
     /// get title of the window
+    #[inline(always)]
     pub fn get_title(&self) -> String{
         self.window.get_title()
     }
 
     /// get the size of the window
+    #[inline(always)]
     pub fn get_size(&self) -> (int, int){
         self.window.get_size()
     }
 
     //get size of the canvas to draw on
+    #[inline(always)]
     pub fn get_draw_size(&self) -> (int, int){
         self.window.get_drawable_size()
     }
-}
-
-#[test]
-fn window(){
-    let mut w = Window::new("window-test",640,480);
-    assert_eq!(w.get_title(), "window-test".to_string());
-
-    //Test the sizing of the window
-    let (width, height) = w.get_size();
-    assert_eq!(width, 640);
-    assert_eq!(height, 480);
-
-    //Drawing logic of the Program
-    let mut x = 0;
-    let mut y = 0;
-
-    w.draw(|ctx| {//drow something
-        ctx.set_source_rgb(0.85, 0.85, 0.85);
-        ctx.rectangle(0.0, 0.0, width as f64, height as f64);
-        ctx.fill();
-
-        ctx.set_source_rgb(0.5, 0.5, 1.0);
-        ctx.set_line_width(10.0);
-
-        ctx.move_to(x as f64, y as f64);
-        ctx.line_to((width - x) as f64, (height - y) as f64);
-        ctx.stroke();
-
-        ctx.set_source_rgb(0.2, 0.7, 0.2);
-        ctx.set_line_width(2.0);
-        ctx.rectangle(10.0, 10.0, (width-20) as f64, (height-20) as f64);//draw box
-
-        ctx.stroke();
-
-        ctx.translate(50.0,50.0);
-        ctx.set_source_rgb(0.5, 0.5, 0.5);
-        ctx.set_line_width(3.0);
-        ctx.rectangle(0.0,0.0, 100.0, 30.0);
-        ctx.stroke();
-    });
-
-    w.show(|ctx|{});//start event loop
 }
 
 /// the trait implemented by all widgets displayed.
@@ -165,11 +147,13 @@ pub trait Widget<Event>{
     /// Method which is used by the layout engine to get the size of a component
     /// by default the size will be calculated by using the render function with
     /// blocked drawing, but if speed matters this function can provide faster information
+    #[inline(always)]
     fn size(&self) -> (f64, f64) {
         (0.0,0.0)
     }
     /// should this component be cached in its own frame buffer?
     /// if nothing is set it wil be painted each time it is called
+    #[inline(always)]
     fn do_cach() -> bool{
         false
     }
@@ -200,16 +184,34 @@ mod test{
 
 pub struct CTX<'a>{
     window: &'a mut Window,//ref to the window
+    event: &'a sdl2::event::Event,
     pos: (f64,f64),
+    should_draw: bool,//wether anything should be drawing
+    should_handle: bool,
+}
+
+impl<'a> CTX<'a>{
+    fn new(window: &'a mut Window, event:&'a sdl2::event::Event, should_draw: bool) -> CTX<'a>{
+        CTX{
+            window: window,
+            event: event,
+            pos: (0.0,0.0),
+            should_draw: should_draw,
+            should_handle: true,
+        }
+    }
 }
 
 impl<'a> CTX<'a>{
     ///this function calls a closure with the cairo drawing context as parameter
     ///so the widget can draw some lower level stuff
     pub fn draw(&mut self, draw_closure: |&mut cairo::Context|){
+        if !self.should_draw{
+            return;
+        }
         let (x, y) = self.pos;
         self.window.draw(|ctx|{
-            ctx.translate(x, y);
+            ctx.translate(x, y);//TODO: replace with a better suited function becaus it is relative
             draw_closure(ctx);
         });
     }
@@ -221,10 +223,11 @@ impl<'a> CTX<'a>{
     /// event: the closure which should be called if the Widget fires an event
     ///        normaly widgets use enums which can then be matched an events can be handled
     ///        if no event should be catched this should be None
+    #[inlne]
     pub fn add<Event>(&mut self,id: uint, w: &Widget<Event>, event:Option<|Event|>) -> (f64, f64){
-        println!("add");
+        //println!("add");
         //TODO: create a sub context
-        return w.render(self);
+        w.render(self)
         //TODO: event handling strategie überdenken
         //TODO: look for event
         //TODO: call function for event handling
@@ -236,6 +239,11 @@ impl<'a> CTX<'a>{
     ///emit an event which can be handled by the parent element.
     pub fn emit<Event: Clone>(&mut self, event: Event){
 
+    }
+
+    #[inline(always)]
+    pub fn go_to(&mut self, x: f64, y: f64){
+        self.pos = (x,y);
     }
 
     #[inline(always)]
@@ -254,8 +262,28 @@ impl<'a> CTX<'a>{
     pub fn get_mut_state(){}
 
     //TODO: add window event subsribing capabilitys
-    pub fn mouseover(&mut self, pos: (f64,f64), handle: |int|){
-        println!("register mousover event");
+    pub fn mouseover(&mut self, size: (f64,f64), handle: |int|){
+        use sdl2::event;
+        if !self.should_handle{
+            return;
+        }
+        //TODO: register instead of handling directly
+
+        let (sx, sy) = self.pos;
+        //println!("({}|{})", sx,sy);
+
+        match self.event{
+            &Event::MouseMotion(_, _, _, _, x, y, xrel, yrel) => {
+                let (bx, by) = size;
+                let x = x as f64;
+                let y = y as f64;
+                if x >= sx && y >= sy && x <= bx+sx && y <= by+sy{
+                    handle(0);
+                }
+                //self.found = true;
+            },
+            _ => return,
+        }
     }
 }
 
