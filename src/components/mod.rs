@@ -1,5 +1,8 @@
-pub use self::button::Button;
+pub use self::button::{Button, ButtonEvent};
+
 pub use self::layout::{Row, Column};
+
+pub use self::label::Label;
 
 pub mod button;
 pub mod label;
