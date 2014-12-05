@@ -40,7 +40,7 @@ impl Widget<ButtonEvent> for Button{
             c.fill();
         });
         //ctx.add(1,Rect::new(0,0,100,100),None);
-        println!("render");
+        //println!("render");
         (self.width, self.height)
     }
     fn size(&self) -> (f64, f64) {
