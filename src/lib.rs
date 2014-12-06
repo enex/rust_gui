@@ -9,11 +9,13 @@ extern crate libc;
 
 extern crate cairo;
 extern crate sdl2;
+extern crate time;
 
 //use std::ptr;
 //use std::io::timer;
 //use std::time::duration::Duration;
 use cairo::Context;
+use time::precise_time_ns;
 
 use sdl2::video::{OPENGL, WindowPos};
 use sdl2::event::{poll_event, Event};
@@ -53,11 +55,13 @@ impl Window{
     pub fn show(&mut self, render: |&mut CTX|){
         use sdl2::event;
 
+        self.cairo_context().save();
         {
             let none = &Event::None;
             let mut ctx = CTX::new(self, none, true);
             render(&mut ctx);
         }
+        self.cairo_context().restore();
         self.update();
 
         'event : loop {
@@ -69,11 +73,16 @@ impl Window{
                 Event::MouseMotion(_, _, _, _, x, y, xrel, yrel) => {
                     //TODO: get mouse state
                     //println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
+                    let start = precise_time_ns();
+                    self.cairo_context().save();
                     {
                         let mut ctx = CTX::new(self, &e, true);
                         render(&mut ctx);
                     }
+                    self.cairo_context().restore();
                     self.update();
+                    let taken = precise_time_ns() - start;
+                    println!("  => {:.3} ms", (taken as f64)/1000000.0);
                 },
                 Event:: Window(_, _, id, d1, d2) => {
                     //TODO: use this event to redraw on size changes and to sleep
@@ -87,7 +96,7 @@ impl Window{
 
     /// get the ciro drawing context to draw on it
     #[inline(always)]
-    pub fn caro_context(&mut self) -> &mut cairo::Context{
+    pub fn cairo_context(&mut self) -> &mut cairo::Context{
         &mut self.ctx
     }
 
