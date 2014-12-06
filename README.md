@@ -99,3 +99,7 @@ impl Elemen{
  - documentation
  - theming
  - veröffentlichen
+
+## Screenshots
+
+![all_widgets example](./screenshot_all_widgets.png)
