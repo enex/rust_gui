@@ -264,17 +264,25 @@ impl<'a, Event> CTX<'a, Event>{
         self.pos = (x,y);
     }
 
+    #[inline(always)]
+    pub fn cairo_pos(&mut self) -> (f64, f64){
+        let mut sx = 0.0;
+        let mut sy = 0.0;
+        self.window.cairo_context().user_to_device(&mut sx, &mut sy);
+        (sx,sy)
+    }
+
     /// get current x positiont
     #[inline(always)]
-    pub fn x(&self) -> f64{
-        let (x,_) = self.pos;
+    pub fn x(&mut self) -> f64{
+        let (x,_) = self.cairo_pos();
         x
     }
 
     /// get current y position
     #[inline(always)]
-    pub fn y(&self) -> f64{
-        let (_,y) = self.pos;
+    pub fn y(&mut self) -> f64{
+        let (_,y) = self.cairo_pos();
         y
     }
 
@@ -282,7 +290,7 @@ impl<'a, Event> CTX<'a, Event>{
     ///it should be avoided in render function, maybe in event handler
     pub fn get_mut_state(){}
 
-    /// register mouse event listener 
+    /// register mouse event listener
     //TODO: add window event subsribing capabilitys
     pub fn mouseover(&mut self, size: (f64,f64), handle: |&sdl2::event::Event, &mut CTX<Event>|){
         use sdl2::event;

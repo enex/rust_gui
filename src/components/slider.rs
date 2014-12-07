@@ -1,5 +1,6 @@
 use Widget;
 use CTX;
+use Event;
 
 pub struct Slider{
     pub max_value: f64,
@@ -19,8 +20,14 @@ impl Slider{
 
 #[deriving(Clone, Show)]
 pub enum SliderEvent{
-    Changed(f64)//event which is fired on value change
+    ///Mouse hovers the slider
+    Hover,
+    ///event which is fired on value change
+    Changed(f64)
 }
+
+//TODO: implement drag and drop behavior
+//TODO: implement layout fill
 
 impl Widget<SliderEvent> for Slider{
     fn render(&mut self, ctx: &mut CTX<SliderEvent>) -> (f64, f64) {
@@ -28,19 +35,20 @@ impl Widget<SliderEvent> for Slider{
         ctx.mouseover((100.0, 10.0), |event, ctx|{
             println!("button event: {}", event);
             hover = true;
+            match event{
+                &Event::MouseMotion(_, _, _, _, _, _, _, _) =>{
+                    ctx.emit(SliderEvent::Hover);//emit hover event
+                },
+                &Event::MouseButtonDown(_, _, _, _, x, _) => {
+                    //TODO: calculate new value
+                    let e = ctx.x();
+                    println!("{}",e);
+                    ctx.emit(SliderEvent::Changed(((x as f64) - e)/100.0 * self.max_value));
+                },
+                _ => {}
+            }
         });
         ctx.draw(|c|{ //right now the cairo wrapper does not offer an abstract way for text rendering
-            /*let mut x = 0.0;
-            let mut y = 0.0;
-            c.user_to_device(&mut x, &mut y);
-            println!("user to device: ({} {})", x, y);
-            c.user_to_device_distance(&mut x, &mut y);
-            println!("user_to_device_distance: ({} {})", x, y);
-            c.device_to_user(&mut x, &mut y);
-            println!("device_to_user: ({} {})", x, y);
-            c.device_to_user_distance(&mut x, &mut y);
-            println!("device_to_user_distance: ({} {})", x, y);*/
-
             c.set_source_rgb(0.6, 0.6, 0.6);
             c.move_to(0.0,5.0);
             c.line_to(100.0,5.0);

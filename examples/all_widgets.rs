@@ -1,8 +1,9 @@
 extern crate gui;
 
-use gui::components::{Button, ButtonEvent, Row, Label, Icon, Slider};
+use gui::components::{Button, ButtonEvent, Row, Label, Icon, Slider, SliderEvent};
 
 fn main(){
+    let mut sv: f64 = 10.0;
     gui::Window::new("test",640,480).show(|ctx|{
         ctx.draw(|c|{//set background-color
             c.set_source_rgb(0.9, 0.9, 0.9);
@@ -42,9 +43,18 @@ fn main(){
             }
         }));
         ctx.go_to(10.0,120.0);
-        ctx.add(3, &mut Label::new("test label".to_string()), None);
+        ctx.add(3, &mut Label::new(format!("Wert: {}", sv)), None);
+
         ctx.go_to(110.0,10.0);
-        ctx.add(12, &mut Slider::new(10.0,30.0,1.0), None);//add a slider
+        ctx.add(12, &mut Slider::new(sv,30.0,1.0), Some(|event|{
+            match event{
+                SliderEvent::Changed(v) => {
+                    println!("new value: {}", v);
+                    sv = v;
+                },
+                _ => {}
+            }
+        }));//add a slider
         ctx.go_to(10.0,50.0);
         //add an icon described by an svg path
         /*ctx.add(4, &mut Icon::new("M15.41 7.41l-1.41-1.41-6 6 6 6 1.41-1.41-4.58-4.59z", (0.2,0.2,0.2)), None);

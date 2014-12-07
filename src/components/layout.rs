@@ -26,3 +26,12 @@ impl<'a> Row<'a>{
 pub struct Col{
     pub spacing: f64,
 }
+
+///Layout management for all widgets.
+///It specifies the size of a widget
+pub enum Layout{
+    ///make it large enough for its content
+    Fit,
+    ///make it as large as the params (width, height)
+    Fill(f64,f64),
+}

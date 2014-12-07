@@ -1,6 +1,6 @@
 pub use self::button::{Button, ButtonEvent};
 
-pub use self::layout::{Row, Col};
+pub use self::layout::{Row, Col, Layout};
 
 pub use self::label::Label;
 

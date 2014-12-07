@@ -16,7 +16,7 @@ und Änderungen können schnell und einfach geschehen.
 Jedes element besitzt eine Render-funktion. In dieser werden die Elemente initialisiert und an
 den context geschickt. Hierbei bekommt jedes Objekt eine ID um.
 
-# Events
+## Events
 vom Context selbst werden Events bereitgestellt, die von jedem element aboniert werden könne.
 Wenn eines dieser Events auslöst wird die Render-funktion des gesuchten elements aufgerufen, und
 das Event gehandled.
@@ -27,7 +27,7 @@ Events können mit der Funktion `ctx.emit(event: Event);` ausgelößst werden. S
 übertragen, so bald die Funktion beendet ist. Als Event-Type sind besonders Enums geeignet,
 da ein Widget verschiedene Events haben könnte und so differenziert werden kann.
 
-# Performance
+## Performance
 Parts of the UI are cached for faster rendering.
 Where this is necessary is determined automatically by using timing
 functions to find out what takes how long.
