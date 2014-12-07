@@ -270,21 +270,27 @@ impl<'a> Widget<()> for Icon<'a>{
                     //TODO: implement the following functions
                     'T' => {//quadratische bizar kurven
                         println!("T");
+                        unimplemented!();
                     },
                     't' => {//quadratische bizar kurven
                         println!("t");
+                        unimplemented!();
                     },
                     'A' => {//Bogenkurven
                         println!("A");
+                        unimplemented!();
                     },
                     'a' => {//Bogenkurven
                         println!("a");
+                        unimplemented!();
                     },
                     'q' => {//quadratic curve
                         println!("q");
+                        unimplemented!();
                     },
                     'Q' => {
                         println!("Q");
+                        unimplemented!();
                     },
                     ' ' => {},//ignore whitespaces
                     _ => {
