@@ -72,38 +72,20 @@ impl Window{
                 Event::Quit(_) => break 'event,
                 Event::KeyDown(_, _, key_code, scan_code, _,_) => println!("deydown {} {}", key_code, scan_code),
                 Event::KeyUp(_, _, _, _, _, _) => println!("key up"),
-                Event::MouseMotion(_, _, _, _, _, _, _, _) => {
+                Event::MouseMotion(_,_,_,_,_,_,_,_) | Event::MouseButtonDown(_,_,_,_,_,_) | Event::MouseButtonUp(_,_,_,_,_,_) => {
                     //TODO: get mouse state
                     //println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
-
+                    let start = precise_time_ns();
                     self.cairo_context().save();
                     {
                         let mut ctx = CTX::new::<()>(self, &e, true);
                         render(&mut ctx);
                     }
                     self.cairo_context().restore();
-                    let start = precise_time_ns();
+
                     self.update();
                     let taken = precise_time_ns() - start;
                     println!("  => {:.3} ms", (taken as f64)/1000000.0);
-                },
-                Event::MouseButtonDown(_,_,_,_,_,_) => {
-                    self.cairo_context().save();
-                    {
-                        let mut ctx = CTX::new::<()>(self, &e, true);
-                        render(&mut ctx);
-                    }
-                    self.cairo_context().restore();
-                    self.update();
-                },
-                Event::MouseButtonUp(_,_,_,_,_,_) => {
-                    self.cairo_context().save();
-                    {
-                        let mut ctx = CTX::new::<()>(self, &e, true);
-                        render(&mut ctx);
-                    }
-                    self.cairo_context().restore();
-                    self.update();
                 },
                 Event::Window(_, _, id, d1, d2) => {
                     //TODO: use this event to redraw on size changes and to sleep
@@ -288,7 +270,13 @@ impl<'a, Event> CTX<'a, Event>{
 
     ///with this function it is possible to mutate the state of the component,
     ///it should be avoided in render function, maybe in event handler
-    pub fn get_mut_state(){}
+    pub fn get_mut_state(){
+        unimplemented!();
+    }
+
+    pub fn get_state(){
+        unimplemented!();
+    }
 
     /// register mouse event listener
     //TODO: add window event subsribing capabilitys
@@ -304,7 +292,9 @@ impl<'a, Event> CTX<'a, Event>{
         self.window.cairo_context().user_to_device(&mut sx, &mut sy);
 
         match self.event{
-            &Event::MouseMotion(_, _, _, _, x, y, xrel, yrel) => {
+            &Event::MouseMotion(_, _, _, _, x, y, _, _)
+            | &Event::MouseButtonDown(_, _, _, _, x, y)
+            | &Event::MouseButtonUp(_, _, _, _, x, y) => {
                 let (bx, by) = size;
                 let x = x as f64;
                 let y = y as f64;
@@ -313,16 +303,6 @@ impl<'a, Event> CTX<'a, Event>{
                 }
                 //self.found = true;
             },
-            &Event::MouseButtonDown(_, _, _, _, x, y) => {
-                let (bx, by) = size;
-                let x = x as f64;
-                let y = y as f64;
-                if x >= sx && y >= sy && x <= bx+sx && y <= by+sy{
-                    handle(self.event, self);
-                }
-                //self.found = true;
-            },
-
             _ => return,
         }
     }
