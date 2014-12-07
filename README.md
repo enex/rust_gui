@@ -79,9 +79,7 @@ impl Elemen{
 ```
 
 ## TODO:
- - make displaying text possible
  - make component system work
- - make event system ready
  - build some basic components
    - button
    - radio
@@ -98,7 +96,7 @@ impl Elemen{
  - state management
  - documentation
  - theming
- - veröffentlichen
+ - publish
 
 ## Screenshots
 
