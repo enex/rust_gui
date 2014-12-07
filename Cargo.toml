@@ -8,4 +8,4 @@ authors = ["enex <sive@web.de>"]
 git = "https://github.com/enex/rust-cairo"
 
 [dependencies]
-sdl2 = "0.0.6"
+sdl2 = "0.0.7"
