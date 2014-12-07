@@ -1,23 +1,27 @@
 use Widget;
 use CTX;
-use std::f32;
 use std::str;
 //use std::from_str::FromStr;
 
+///a Widget used for monochrom vektor Icons.
 pub struct Icon<'a>{
     path: &'a str,//a path like in svg
+    pub fill: Option<(f64,f64,f64)>,
     color: (f64, f64, f64),
 }
 
 impl<'a> Icon<'a>{
+    ///create a new icon form a given svg-path
     pub fn new(path: &'a str, color: (f64,f64,f64)) -> Icon<'a>{
         Icon{
             path: path,
             color: color,
+            fill: None,
         }
     }
 }
 
+//internal struct to parse a svg-path
 struct PathParser<'a>{
     chars: str::Chars<'a>,
     last: Option<char>,//last character to unread
@@ -76,7 +80,7 @@ impl<'a> PathParser<'a>{
             };
         }
         let mut nf = true;
-        while(cc.is_digit(10)|((cc == '.')&&nf)){
+        while cc.is_digit(10)|((cc == '.')&&nf){
             //println!("    {}", cc);
             if cc == '.'{
                 nf = false;
@@ -96,17 +100,18 @@ impl<'a> PathParser<'a>{
 
 impl<'a> Widget<()> for Icon<'a>{
     ///this function will render a svg path, if the path is not correct it will panic
-    fn render(&self, ctx: &mut CTX) -> (f64, f64) {
+    fn render(&mut self, ctx: &mut CTX<()>) -> (f64, f64) {
         ctx.draw(|c|{
             //Parsing and drawing logic
             //TODO: add this
             let (r,g,b) = self.color;
+            let mut before: Option<(f64,f64)> = None;//for s path
             c.set_source_rgb(r, g, b);
             let mut chars = PathParser::new(self.path.chars());
 
             loop{
                 //TODO: make multible comands work
-                let mut cc = match chars.next(){
+                let cc = match chars.next(){
                     Some(e) => e,
                     None => break
                 };
@@ -116,12 +121,13 @@ impl<'a> Widget<()> for Icon<'a>{
                         let y = chars.num().unwrap();
                         c.move_to(x,y);
                         //println!("move to ({} {})", x, y);
-                        //TODO: parse move to
+                        before = None;
                     },
                     'm' => {//move to
                         let x = chars.num().unwrap();
                         let y = chars.num().unwrap();
                         c.rel_move_to(x,y);
+                        before = None;
                     },
                     'L' => {//line to
                         loop{//loop over the numbers
@@ -133,6 +139,7 @@ impl<'a> Widget<()> for Icon<'a>{
                             c.line_to(x,y);
                             //println!("line to ({} {})",x,y);
                         }
+                        before = None;
                     },
                     'l' => {//line to
                         //println!("line to relative");
@@ -145,25 +152,31 @@ impl<'a> Widget<()> for Icon<'a>{
                             c.rel_line_to(x,y);
                             //println!("line to ({} {})",x,y);
                         }
+                        before = None;
                     },
                     'V' => {//vertical line
                         //println!("vertival line");
                         c.line_to(0.0,chars.num().unwrap());
+                        before = None;
                     },
                     'v' => {//vertical line
                         //println!("vertival line relative");
                         c.rel_line_to(0.0,chars.num().unwrap());
+                        before = None;
                     },
                     'H' => {//horizontal line
                         c.line_to(chars.num().unwrap(),0.0);
+                        before = None;
                         //println!("horizontal line");
                     },
                     'h' => {//horizontal line
+                        before = None;
                         c.rel_line_to(chars.num().unwrap(),0.0);
                         //println!("horizontal line relative");
                     },
                     'Z' | 'z' => {//close path
                         //println!("close path");
+                        before = None;
                         c.close_path();
                     },
                     'c' => {//relative curve
@@ -179,7 +192,7 @@ impl<'a> Widget<()> for Icon<'a>{
                             let y2 = chars.num().unwrap();
                             let x3 = chars.num().unwrap();
                             let y3 = chars.num().unwrap();
-
+                            //TODO: set before
                             c.rel_curve_to(x1,y1,x2,y2,x3,y3);
                         }
                     },
@@ -196,6 +209,8 @@ impl<'a> Widget<()> for Icon<'a>{
                             let x3 = chars.num().unwrap();
                             let y3 = chars.num().unwrap();
 
+                            //TODO: set before
+
                             c.curve_to(x1,y1,x2,y2,x3,y3);
                         }
                     },
@@ -209,8 +224,20 @@ impl<'a> Widget<()> for Icon<'a>{
                             let y2 = chars.num().unwrap();
                             let x  = chars.num().unwrap();
                             let y  = chars.num().unwrap();
-                            c.rel_curve_to(x2,y2,x2,y2,x,y);
-                            println!("s");
+                            let mut x1;
+                            let mut y1;
+                            match before{
+                                None => {
+                                    x1 = x2;
+                                    y1 = y2;
+                                },
+                                Some((x,y)) => {
+                                    x1 = x;
+                                    y1 = y;
+                                }
+                            }
+                            c.rel_curve_to(x2,y2,x1,y1,x,y);
+                            //println!("s");
                         }
                     },
                     'S' => {
@@ -222,8 +249,22 @@ impl<'a> Widget<()> for Icon<'a>{
                             let y2 = chars.num().unwrap();
                             let x  = chars.num().unwrap();
                             let y  = chars.num().unwrap();
-                            c.curve_to(x2,y2,x2,y2,x,y);
-                            println!("S");
+
+                            let mut x1;
+                            let mut y1;
+                            match before{
+                                None => {
+                                    x1 = x2;
+                                    y1 = y2;
+                                },
+                                Some((x,y)) => {
+                                    x1 = x;
+                                    y1 = y;
+                                }
+                            }
+
+                            c.curve_to(x2,y2,x1,y1,x,y);
+                            //println!("S");
                         }
                     },
                     //TODO: implement the following functions
@@ -245,8 +286,9 @@ impl<'a> Widget<()> for Icon<'a>{
                     'Q' => {
                         println!("Q");
                     },
+                    ' ' => {},//ignore whitespaces
                     _ => {
-                        //println!("something else {}", cc);
+                        println!("something else '{}'", cc);
                     }
                 }
                 //println!("ch: {}", cc);

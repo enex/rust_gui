@@ -1,22 +1,28 @@
 use Widget;
 use CTX;
 
-pub struct Row{
+///Layout for placing everything in a row
+pub struct Row<'a>{
     pub spacing: f64,
+    pub render_childs: |&mut CTX<()>|:'a,
 }
 
-impl Widget<()> for Row{
-    fn render(&self, ctx: &mut CTX) -> (f64, f64) {
+impl<'a> Widget<()> for Row<'a>{
+    fn render(&mut self, ctx: &mut CTX<()>) -> (f64, f64) {
         //TODO: render the child nodes
+        (self.render_childs)(ctx);
         (0.0,0.0)
     }
 }
-impl Row{
-    fn childs(&self, c:|&mut CTX|) {
-        //TODO: draw child nodes
+
+impl<'a> Row<'a>{
+    #[inline(always)]
+    pub fn childs(&mut self, c:|&mut CTX<()>|:'a) {
+        self.render_childs = c;
     }
 }
 
-pub struct Column{
+///Layout for placing into a column
+pub struct Col{
     pub spacing: f64,
 }

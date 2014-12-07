@@ -1,12 +1,16 @@
 use Widget;
 use CTX;
+use components::Label;
+use Event;
 
+#[deriving(Clone, Show)]
 pub enum ButtonEvent{
     Click,//click event on mouse down
     Hover,//if mose move and mouse over button
     Leave
 }
 
+#[deriving(Clone, Show)]
 pub struct Button{
     pub text: String,
     pub width: f64,
@@ -24,11 +28,20 @@ impl Button{
 }
 
 impl Widget<ButtonEvent> for Button{
-    fn render(&self, ctx: &mut CTX) -> (f64, f64) {
+    fn render(&mut self, ctx: &mut CTX<ButtonEvent>) -> (f64, f64) {
         let mut hover = false;
-        ctx.mouseover((self.width, self.height), |event|{
+        ctx.mouseover((self.width, self.height), |event, ctx|{
             println!("button event: {}", event);
             hover = true;
+            match event{
+                &Event::MouseMotion(_, _, _, _, _, _, _, _) =>{
+                    ctx.emit(ButtonEvent::Hover);//emit hover event
+                },
+                &Event::MouseButtonDown(_, _, _, _, x, y) => {
+                    ctx.emit(ButtonEvent::Click);
+                },
+                _ => {}
+            }
         });
         ctx.draw(|c|{
             if hover{
@@ -39,8 +52,8 @@ impl Widget<ButtonEvent> for Button{
             c.rectangle(0.0, 0.0, self.width, self.height);
             c.fill();
         });
-        //ctx.add(1,Rect::new(0,0,100,100),None);
-        //println!("render");
+        ctx.go_to(0.0,0.0);
+        ctx.add(1, &mut Label::new(self.text.clone()), None);
         (self.width, self.height)
     }
     fn size(&self) -> (f64, f64) {
