@@ -21,62 +21,21 @@ vom Context selbst werden Events bereitgestellt, die von jedem element aboniert 
 Wenn eines dieser Events auslöst wird die Render-funktion des gesuchten elements aufgerufen, und
 das Event gehandled.
 
-Außerdem können Componenten selbs event bereitstellen. Diese werden vom Vontext verwalted und
-gehen immer vom Child-Element zum Parent-Element, so das das Parent element dieße behandeln kann.
-Events können mit der Funktion `ctx.emit(name: Eq, info: <Info>);` ausgelößst werden. Sie werden
-übertragen, so bald die Funktion beendet ist.
-Überlegung: Event möglicherweiße Als rückgabeparamter ansehen.
+Außerdem können Componenten selbs event bereitstellen. Diese werden vom Context verwalted und
+gehen immer vom Child-Element zum Parent-Element, so das das Parent element diese behandeln kann.
+Events können mit der Funktion `ctx.emit(event: Event);` ausgelößst werden. Sie werden
+übertragen, so bald die Funktion beendet ist. Als Event-Type sind besonders Enums geeignet,
+da ein Widget verschiedene Events haben könnte und so differenziert werden kann.
 
 # Performance
-Um eine gute performance zu erreichen, können gezeichnete Bereiche gecached werden, so dass sie nur
-einmal gezeichnet werden. das ist mit der Funktion `ctx.cach_all();` für das Ganze lement und mit
-`ctx.cach();` für ein einzelnes Element möglich.
+Parts of the UI are cached for faster rendering.
+Where this is necessary is determined automatically by using timing
+functions to find out what takes how long.
 
 ## Zeichnen
 Es wird immer von oben nach unten gezeichnet das heißt bei der Anordnung ist die Reihenfolge zu
 beachten. Um die Position einzelner Komponenten zu bestimmen kann die Parent funktion deren Position
 bestimmen.
-
-## Syntactic shugar
-```
-struct Component{
-    state: Option<()>,
-    //other paramters
-}
-impl Element for Component{
-    fn draw(); //function to draw raw things, it will be called after render
-    fn render(&self, ctx: context) -> Element {
-        ctx.add(ListView::new().childs(|ctx|{
-            ctx.add(1,Button::new("OK"),|event|{
-                match event{
-                    Click => self.test()
-                }
-            })
-        }))
-
-        gui!(ctx,
-            ListView(){
-                Button("OK")=>{
-                    Click => self.test()
-                }
-                Button(text: "No") => {
-                    Click => self.abord()
-                }
-                Button("quit") => {
-                    Click => self.exit()
-                }
-            }
-        );
-    }
-    gui_state!(state, Option<()>);//generates acces functions to the state
-}
-impl Elemen{
-    fn exit(){
-
-    },
-    //ein paar setter funktionen
-}
-```
 
 ## TODO:
  - make component system work
