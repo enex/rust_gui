@@ -20,13 +20,13 @@ use time::precise_time_ns;
 use sdl2::video::{OPENGL, WindowPos};
 use sdl2::event::{poll_event};
 pub use sdl2::event::Event;//reexprot events
+
+use std::any::{Any, AnyRefExt};
 //use std::cell::RefCell;
 //use sdl2::rect::{Rect};
 mod sw;
 
 pub mod components; //TODO: export gui components
-
-//TODO: inline functions in cairo wrapper for better speed
 
 /// Struct of a desctop app which is the basic setup
 /// it includes everything nedded for a desktop application.
@@ -35,6 +35,10 @@ pub struct Window{
     delay: uint,//delay betwen event checks default is 10
     pub window: sdl2::video::Window,
     ctx: Context,//cairo context for drawing
+    current_id: Vec<uint>,//id of the currently drawing component
+    state: Vec<(Vec<uint>, Box<Any>)>,//store for state
+    ///id of the currently selected element
+    pub focused: Vec<uint>,
 }
 
 impl Window{
@@ -49,6 +53,9 @@ impl Window{
             // Create a window
             window: window,
             ctx: ctx,
+            current_id: vec![],
+            state: Vec::new(),
+            focused: Vec::new(),
         }
     }
 
@@ -70,12 +77,12 @@ impl Window{
             let e = poll_event();
             match e {
                 Event::Quit(_) => break 'event,
-                Event::KeyDown(_, _, key_code, scan_code, _,_) => println!("deydown {} {}", key_code, scan_code),
-                Event::KeyUp(_, _, _, _, _, _) => println!("key up"),
+                Event::KeyDown(_, _, _, _, _,_) |
+                Event::KeyUp(_, _, _, _, _, _) |
                 Event::MouseMotion(_,_,_,_,_,_,_,_) | Event::MouseButtonDown(_,_,_,_,_,_) | Event::MouseButtonUp(_,_,_,_,_,_) => {
                     //TODO: get mouse state
                     //println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
-                    let start = precise_time_ns();
+                    //let start = precise_time_ns();
                     self.cairo_context().save();
                     {
                         let mut ctx = CTX::new::<()>(self, &e, true);
@@ -84,8 +91,8 @@ impl Window{
                     self.cairo_context().restore();
 
                     self.update();
-                    let taken = precise_time_ns() - start;
-                    println!("  => {:.3} ms", (taken as f64)/1000000.0);
+                    //let taken = precise_time_ns() - start;
+                    //println!("  => {:.3} ms", (taken as f64)/1000000.0);
                 },
                 Event::Window(_, _, id, d1, d2) => {
                     //TODO: use this event to redraw on size changes and to sleep
@@ -212,8 +219,11 @@ impl<'a, Event> CTX<'a, Event>{
     pub fn add<Event>(&mut self,id: uint, w: &mut Widget<Event>, event:Option<|Event|>) -> (f64, f64){
         //println!("add");
         //TODO: create a sub context
-        self.window.cairo_context().save();
+        self.window.current_id.push(id);//keep track of the id
+
+        //do the rendering
         let (x, y) = self.pos;
+        self.window.cairo_context().save();
         self.window.cairo_context().translate(x,y);//go to the right position
         let mut e;
         //TODO: ignore emits if no event handler is given
@@ -231,6 +241,8 @@ impl<'a, Event> CTX<'a, Event>{
             //TODO: call callback for event
         }
         self.window.cairo_context().restore();
+
+        self.window.current_id.pop();
         e
     }
 
@@ -246,6 +258,7 @@ impl<'a, Event> CTX<'a, Event>{
         self.pos = (x,y);
     }
 
+    ///actual absolute position relativ to the top left corner of the window
     #[inline(always)]
     pub fn cairo_pos(&mut self) -> (f64, f64){
         let mut sx = 0.0;
@@ -268,10 +281,31 @@ impl<'a, Event> CTX<'a, Event>{
         y
     }
 
+    ///set current object as focused. So the keyboard events will be sent to this element.
+    #[inline(always)]
+    pub fn focus(&mut self){
+        self.window.focused = self.window.current_id.clone();
+    }
+
+    ///wether the element is focused
+    #[inline(always)]
+    pub fn is_focused(&mut self) -> bool{
+        self.window.focused == self.window.current_id
+    }
+
+    ///Register an event listener for key events.
+    #[inline(always)]
+    pub fn keyevent(&mut self, handle: |&sdl2::event::Event, &mut CTX<Event>|){
+        if self.window.focused == self.window.current_id{
+            handle(self.event, self);
+        }
+    }
+
     ///with this function it is possible to mutate the state of the component,
     ///it should be avoided in render function, maybe in event handler
-    pub fn get_mut_state(){
+    pub fn get_mut_state<T:Any+Clone>() -> Option<Box<T>>{
         unimplemented!();
+        None
     }
 
     pub fn get_state(){
@@ -286,6 +320,7 @@ impl<'a, Event> CTX<'a, Event>{
             return;
         }
         //TODO: register instead of handling directly
+        //TODO: only call callback if in handling mode
 
         let mut sx = 0.0;
         let mut sy = 0.0;

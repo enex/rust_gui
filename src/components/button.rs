@@ -31,7 +31,7 @@ impl Widget<ButtonEvent> for Button{
     fn render(&mut self, ctx: &mut CTX<ButtonEvent>) -> (f64, f64) {
         let mut hover = false;
         ctx.mouseover((self.width, self.height), |event, ctx|{
-            println!("button event: {}", event);
+            //println!("button event: {}", event);
             hover = true;
             match event{
                 &Event::MouseMotion(_, _, _, _, _, _, _, _) =>{
@@ -51,9 +51,13 @@ impl Widget<ButtonEvent> for Button{
             }
             c.rectangle(0.0, 0.0, self.width, self.height);
             c.fill();
+            c.stroke();
         });
         ctx.go_to(0.0,0.0);
-        ctx.add(1, &mut Label::new(self.text.clone()), None);
+        let mut l = Label::new(self.text.clone());
+        l.font_size = self.height - 4.0;
+        ctx.go_to(3.0, 0.0);
+        ctx.add(1, &mut l, None);
         (self.width, self.height)
     }
     fn size(&self) -> (f64, f64) {

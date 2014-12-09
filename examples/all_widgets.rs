@@ -1,9 +1,18 @@
 extern crate gui;
 
-use gui::components::{Button, ButtonEvent, Row, Label, Icon, Slider, SliderEvent};
+use gui::components::{
+    Button, ButtonEvent,
+    Row,
+    Label,
+    Icon,
+    Slider, SliderEvent,
+    Checkbox, CheckboxEvent,
+    TextInput, TextInputEvent};
 
 fn main(){
     let mut sv: f64 = 10.0;
+    let mut checked = false;
+    let mut tiv = "".to_string();
     gui::Window::new("test",640,480).show(|ctx|{
         ctx.draw(|c|{//set background-color
             c.set_source_rgb(0.9, 0.9, 0.9);
@@ -27,33 +36,50 @@ fn main(){
             }
         )*/
 
-        ctx.add(1, &mut Button::new("Hallo Welt".to_string(), 100.0,20.0), Some(|event|{
-            match event{
-                ButtonEvent::Click => println!("Button1 geclickt"),
-                ButtonEvent::Hover => println!("Hover Button1"),
-                _ => {}
+        ctx.add(1, &mut Button::new("Hallo Welt".to_string(), 100.0,20.0), Some(|event| match event{
+            ButtonEvent::Click => println!("Button1 geclickt"),
+            ButtonEvent::Hover => println!("Hover Button1"),
+            _ => {}
+        }));
+        ctx.go_to(5.0,200.0);
+        ctx.add(20, &mut Checkbox::new(checked, 20.0,20.0), Some(|event| match event{
+            CheckboxEvent::Change(now) => {
+                println!("Checkbox change {}", now);
+                checked = now;
             }
+        }));
+        ctx.go_to(150.0,20.0);
+        ctx.add(21, &mut TextInput::new(tiv.clone(), "Text".to_string()), Some(|event| match event{
+            TextInputEvent::Change(now) => {
+                println!("Text-input change {}", now)
+                tiv = now;
+            },
+            //_ => {}
+        }));
+        ctx.go_to(150.0,50.0);
+        ctx.add(22, &mut TextInput::new(tiv.clone(), "Text".to_string()), Some(|event| match event{
+            TextInputEvent::Change(now) => {
+                println!("Text-input change {}", now)
+                tiv = now;
+            },
+            //_ => {}
         }));
         ctx.go_to(5.0,60.0);
-        ctx.add(2, &mut Button::new("Tschüss Welt".to_string(), 100.0,20.0), Some(|event|{
-            match event{
-                ButtonEvent::Click => println!("Button2 geclickt"),
-                ButtonEvent::Hover => println!("Hover Button2"),
-                _ => {}
-            }
+        ctx.add(2, &mut Button::new("Tschüss Welt".to_string(), 100.0,20.0), Some(|event| match event{
+            ButtonEvent::Click => println!("Button2 geclickt"),
+            ButtonEvent::Hover => println!("Hover Button2"),
+            _ => {}
         }));
-        ctx.go_to(10.0,120.0);
+        ctx.go_to(10.0,120.0+sv);
         ctx.add(3, &mut Label::new(format!("Wert: {}", sv)), None);
 
         ctx.go_to(110.0,10.0);
-        ctx.add(12, &mut Slider::new(sv,30.0,1.0), Some(|event|{
-            match event{
-                SliderEvent::Changed(v) => {
-                    println!("new value: {}", v);
-                    sv = v;
-                },
-                _ => {}
-            }
+        ctx.add(12, &mut Slider::new(sv,30.0,1.0), Some(|event| match event{
+            SliderEvent::Changed(v) => {
+                println!("new value: {}", v);
+                sv = v;
+            },
+            _ => {}
         }));//add a slider
         ctx.go_to(10.0,50.0);
         //add an icon described by an svg path
