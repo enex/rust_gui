@@ -36,7 +36,7 @@ fn main(){
             }
         )*/
 
-        ctx.add(1, &mut Button::new("Hallo Welt".to_string(), 100.0,20.0), Some(|event| match event{
+        ctx.add(1, &mut Button::new("Button1".to_string(), 100.0,20.0), Some(|event| match event{
             ButtonEvent::Click => println!("Button1 geclickt"),
             ButtonEvent::Hover => println!("Hover Button1"),
             _ => {}
@@ -65,7 +65,7 @@ fn main(){
             //_ => {}
         }));
         ctx.go_to(5.0,60.0);
-        ctx.add(2, &mut Button::new("Tschüss Welt".to_string(), 100.0,20.0), Some(|event| match event{
+        ctx.add(2, &mut Button::new("Button2".to_string(), 100.0,20.0), Some(|event| match event{
             ButtonEvent::Click => println!("Button2 geclickt"),
             ButtonEvent::Hover => println!("Hover Button2"),
             _ => {}
