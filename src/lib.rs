@@ -47,7 +47,25 @@ impl Window{
         sdl2::init(sdl2::INIT_EVERYTHING);
 
         let window = sdl2::video::Window::new(title, WindowPos::PosCentered, WindowPos::PosCentered, width, height, OPENGL).unwrap();
-        let ctx: Context = Context::new(&mut sw::SurfaceWrapper::from_sdl(window.get_surface().unwrap())).unwrap();
+        let surface = match window.get_surface() {
+            Ok(s) => s,
+            Err(e) => panic!("could not get window surface {}",e)
+        };
+        surface.lock();
+        let ss = surface.raw();//raw sdl surface
+        let ctx =  match unsafe{
+            let surface = cairo::ffi::cairo_image_surface_create_for_data(
+                (*ss).pixels as *mut u8,
+                cairo::ffi::CAIRO_FORMAT_RGB24,
+                (*ss).w,
+                (*ss).h,
+                (*ss).pitch
+            );
+            Context::from_raw(surface)
+        }{
+            Ok(e) => e,
+            Err(e) => panic!("not able to create cairo-context {}", e)
+        };
         Window{
             delay: 12,
             // Create a window

@@ -8,17 +8,18 @@ pub struct SurfaceWrapper{
 }
 impl SurfaceWrapper{
     pub fn from_sdl(sdl_surface: sdl2::surface::Surface) -> SurfaceWrapper{
+        sdl_surface.unlock();
         unsafe{
             let ss = sdl_surface.raw();
-        let surface = cairo::ffi::cairo_image_surface_create_for_data(
-            (*ss).pixels as *mut u8,
-            cairo::ffi::CAIRO_FORMAT_RGB24,
-            (*ss).w,
-            (*ss).h,
-            (*ss).pitch
-        );
-        SurfaceWrapper{ptr: surface}
-    }
+            let surface = cairo::ffi::cairo_image_surface_create_for_data(
+                (*ss).pixels as *mut u8,
+                cairo::ffi::CAIRO_FORMAT_RGB24,
+                (*ss).w,
+                (*ss).h,
+                (*ss).pitch
+            );
+            SurfaceWrapper{ptr: surface}
+        }
     }
 }
 impl cairo::Surface for SurfaceWrapper{

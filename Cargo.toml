@@ -2,10 +2,13 @@
 
 name = "gui"
 version = "0.0.1"
+repository = "https://github.com/enex/rust-gui"
+license = "LGPL"
 authors = ["enex <sive@web.de>"]
+keywords = ["SDL", "windowing", "graphics", "gui", "react", "dataflow"]
 
 [dependencies.cairo]
 git = "https://github.com/enex/rust-cairo"
 
 [dependencies]
-sdl2 = "0.0.7"
+sdl2 = "0.0.8"
