@@ -1,11 +1,13 @@
 [package]
 
 name = "gui"
-version = "0.0.1"
-repository = "https://github.com/enex/rust-gui"
+version = "0.0.0"
+repository = "https://github.com/enex/rust-gui.git"
 license = "LGPL"
 authors = ["enex <sive@web.de>"]
 keywords = ["SDL", "windowing", "graphics", "gui", "react", "dataflow"]
+readme = "README.md"
+homepage = "https://github.com/enex/rust-gui"
 
 [dependencies.cairo]
 git = "https://github.com/enex/rust-cairo"
