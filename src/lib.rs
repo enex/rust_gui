@@ -24,7 +24,6 @@ pub use sdl2::event::Event;//reexprot events
 use std::any::{Any, AnyRefExt};
 //use std::cell::RefCell;
 //use sdl2::rect::{Rect};
-mod sw;
 
 pub mod components; //TODO: export gui components
 
