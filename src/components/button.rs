@@ -3,7 +3,7 @@ use CTX;
 use components::Label;
 use Event;
 
-#[deriving(Clone, Show)]
+#[deriving(Show, Copy)]
 pub enum ButtonEvent{
     Click,//click event on mouse down
     Hover,//if mose move and mouse over button
@@ -37,7 +37,7 @@ impl Widget<ButtonEvent> for Button{
                 &Event::MouseMotion(_, _, _, _, _, _, _, _) =>{
                     ctx.emit(ButtonEvent::Hover);//emit hover event
                 },
-                &Event::MouseButtonDown(_, _, _, _, x, y) => {
+                &Event::MouseButtonDown(_, _, _, _, _, _) => {
                     ctx.emit(ButtonEvent::Click);
                 },
                 _ => {}

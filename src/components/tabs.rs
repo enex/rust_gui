@@ -1,3 +1,4 @@
+#[deriving(Copy)]
 pub struct Tabs{
     pub color: (f64,f64,f64),
 }

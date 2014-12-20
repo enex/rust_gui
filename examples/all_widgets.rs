@@ -2,7 +2,6 @@ extern crate gui;
 
 use gui::components::{
     Button, ButtonEvent,
-    Row,
     Label,
     Icon,
     Slider, SliderEvent,
@@ -81,9 +80,10 @@ fn main(){
             },
             _ => {}
         }));//add a slider
-        ctx.go_to(10.0,50.0);
+        ctx.go_to(100.0,150.0);
         //add an icon described by an svg path
-        /*ctx.add(4, &mut Icon::new("M15.41 7.41l-1.41-1.41-6 6 6 6 1.41-1.41-4.58-4.59z", (0.2,0.2,0.2)), None);
+        ctx.add(4, &mut Icon::new("M15.41 7.41l-1.41-1.41-6 6 6 6 1.41-1.41-4.58-4.59z", (0.2,0.2,0.2)), None);
+        /*
         ctx.go_to(40.0,50.0);
         ctx.add(5, &mut Icon::new("M19 6.41l-1.41-1.41-5.59 5.59-5.59-5.59-1.41 1.41 5.59 5.59-5.59 5.59 1.41 1.41 5.59-5.59 5.59 5.59 1.41-1.41-5.59-5.59z", (0.2,0.2,0.2)), None);
         ctx.go_to(70.0,50.0);

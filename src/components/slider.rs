@@ -2,6 +2,7 @@ use Widget;
 use CTX;
 use Event;
 
+#[deriving(Copy)]
 pub struct Slider{
     pub max_value: f64,
     pub step_size: f64,
@@ -18,7 +19,7 @@ impl Slider{
     }
 }
 
-#[deriving(Clone, Show)]
+#[deriving(Clone, Show, Copy)]
 pub enum SliderEvent{
     ///Mouse hovers the slider
     Hover,

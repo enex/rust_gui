@@ -23,12 +23,14 @@ impl<'a> Row<'a>{
 }
 
 ///Layout for placing into a column
+#[deriving(Copy)]
 pub struct Col{
     pub spacing: f64,
 }
 
 ///Layout management for all widgets.
 ///It specifies the size of a widget
+#[deriving(Copy)]
 pub enum Layout{
     ///make it large enough for its content
     Fit,

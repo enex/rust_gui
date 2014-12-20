@@ -33,6 +33,7 @@ impl Widget<TextInputEvent> for TextInput{
             match event{
                 &Event::MouseButtonDown(_, _, _, _, _, _) => {
                     ctx.focus();//focus this element
+                    ctx.set_state(0u32);//set point of cursor
                 },
                 _ => {}
             }

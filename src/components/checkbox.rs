@@ -2,13 +2,13 @@ use Widget;
 use CTX;
 use Event;
 
-#[deriving(Clone, Show)]
+#[deriving(Clone, Show, Copy)]
 pub enum CheckboxEvent{
     Change(bool),//click event on mouse down
 }
 
 ///a checkbox which can either be checked or not
-#[deriving(Clone, Show)]
+#[deriving(Clone, Show, Copy)]
 pub struct Checkbox{
     pub value: bool,
     pub width: f64,
