@@ -13,4 +13,4 @@ homepage = "https://github.com/enex/rust-gui"
 git = "https://github.com/enex/rust-cairo"
 
 [dependencies]
-sdl2 = "0.0.8"
+sdl2 = "0.0.11"
