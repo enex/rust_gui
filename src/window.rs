@@ -1,28 +1,36 @@
-use cairo::Context;
 //use time::precise_time_ns;
 use sdl2;
 use cairo;
-use CTX;
+use ctx::CTX;
 
 use sdl2::video::{OPENGL, WindowPos};
 use sdl2::event::{poll_event};
 use sdl2::event::Event;//reexprot events
 use std::any::Any;
+use Context;
 
-use state;
-
-/// Struct of a desctop app which is the basic setup
+/// Struct of a desktop app which is the basic setup
 /// it includes everything nedded for a desktop application.
 /// Sdl2 is used as the interface to the window manager and cairo for rendering.
 pub struct Window{
-    delay: uint,//delay betwen event checks default is 10
+    ///delay betwen event checks default is 10
+    pub delay: uint,
+    ///sdl2 Window
     pub window: sdl2::video::Window,
-    ctx: Context,//cairo context for drawing
-    pub current_id: Vec<uint>,//id of the currently drawing component
-    state: Vec<state::Container>,//store for state
+    ///id of the currently drawing component
+    current_id: Vec<uint>,
+    ctx: cairo::Context,//cairo context for drawing
+    //state: Vec<state::Container>,//store for state
     ///id of the currently selected element
     pub focused: Vec<uint>,
 }
+
+/// Events are handled with moved closures as filters that means
+/// you can get a streeem of event form the Context and filert it
+/// with a function like so:
+///     ctx.events(move |event| ..., |event| ...)
+/// whrere the first closure filters the closures so only interesting closures are lef
+/// an the second calls the closure which does actual event handling inside of the component
 
 impl Window{
     /// create a new window with given title, width and height
@@ -36,7 +44,7 @@ impl Window{
         };
         surface.lock();
         let ss = surface.raw();//raw sdl surface
-        let ctx =  match unsafe{
+        let cr = unsafe{
             let surface = cairo::ffi::cairo_image_surface_create_for_data(
                 (*ss).pixels as *mut u8,
                 cairo::ffi::CAIRO_FORMAT_RGB24,
@@ -44,59 +52,49 @@ impl Window{
                 (*ss).h,
                 (*ss).pitch
             );
-            Context::from_raw(surface)
-        }{
-            Ok(e) => e,
-            Err(e) => panic!("not able to create cairo-context {}", e)
-        };
+            if(surface.is_null()){
+                panic!("could not create surface");
+            }
+            unsafe{
+                cairo::Context::from_raw(surface)
+            }
+        }.unwrap();
+
         Window{
             delay: 12,
             window: window,
-            ctx: ctx,
+            ctx: cr,
             current_id: vec![],
-            state: Vec::new(),
             focused: Vec::new(),
         }
     }
 
     /// function which takes the render function to generate the content, and then listens for input events
     /// it will return, if the window has been closed.
-    pub fn show(&mut self, render: |&mut CTX<()>|){
+    pub fn show<F>(&mut self, render: F) where F:  Fn(&mut CTX){
+        //self.window.show();
+        self.update();
+        //initial draw:
         self.cairo_context().save();
         {
-            let none = &Event::None;
-            let mut ctx = CTX::new::<()>(self, none, true);
-            render(&mut ctx);
+            let mut c = CTX::new(self);
+            render(&mut c);
         }
         self.cairo_context().restore();
         self.update();
 
-        'event : loop {
-            let e = poll_event();
-            match e {
-                Event::Quit(_) => break 'event,
-                Event::KeyDown(_, _, _, _, _,_) |
-                Event::KeyUp(_, _, _, _, _, _) |
-                Event::MouseMotion(_,_,_,_,_,_,_,_) | Event::MouseButtonDown(_,_,_,_,_,_) | Event::MouseButtonUp(_,_,_,_,_,_) => {
-                    //TODO: get mouse state
-                    //println!("mouse move: ({}|{}) ({}|{})",x,y,xrel,yrel);
-                    //let start = precise_time_ns();
-                    self.cairo_context().save();
-                    {
-                        let mut ctx = CTX::new::<()>(self, &e, true);
-                        render(&mut ctx);
-                    }
-                    self.cairo_context().restore();
-
-                    self.update();
-                    //let taken = precise_time_ns() - start;
-                    //println!("  => {:.3} ms", (taken as f64)/1000000.0);
-                },
-                Event::Window(_, _, id, d1, d2) => {
-                    //TODO: use this event to redraw on size changes and to sleep
-                    println!("window event {} {} {}", id, d1, d2);
-                },
-                _ => sdl2::timer::delay(self.delay)
+        'main : loop {
+            'event : loop {
+                match sdl2::event::poll_event() {
+                    sdl2::event::Event::Quit(_) => break 'main,
+                    sdl2::event::Event::KeyDown(_, _, key, _, _, _) => {
+                        if key == sdl2::keycode::KeyCode::Escape {
+                            break 'main
+                        }
+                    },
+                    sdl2::event::Event::None => break 'event,
+                    _ => sdl2::timer::delay(self.delay)
+                }
             }
         }
         sdl2::quit();
@@ -105,22 +103,12 @@ impl Window{
     /// search the state of a component by Id
     pub fn find_state<T>(&self, id: Vec<uint>) -> Option<T>{
         //TODO: implement functionality
-        None
+        unimplemented!()
     }
 
     /// set the state
     pub fn set_state<T:Any+Clone+Eq>(&self, id: Vec<uint>, v: T){
-        //TODO: make this work
-        let list = &self.state;
-        for s in id.into_iter(){
-            println!("{}", s);
-            for j in range(0,list.len()) {
-                if list[j].id == s{
-                    println!("gefunden")
-                }
-            }
-            println!("neu hinzufügen");
-        }
+        unimplemented!()
     }
 
     /// get the ciro drawing context to draw on it
@@ -130,12 +118,13 @@ impl Window{
         &mut self.ctx
     }
 
+    /*
     /// calls the given function and provides a cairo drawing context
     #[stable]
     #[inline(always)]
     pub fn draw(&mut self, draw_closure: |&mut cairo::Context|){
         draw_closure(&mut self.ctx);
-    }
+    }*/
 
     ///Function to update view to cairo drawing
     #[stable]

@@ -1,36 +1,51 @@
 use Widget;
-use CTX;
+use Context;
 
 ///Layout for placing everything in a row
-pub struct Row<'a>{
+pub struct Row<F> where F: Fn(&mut Context<()>){
     pub spacing: f64,
-    pub render_childs: |&mut CTX<()>|:'a,
+    pub render_childs: F,
 }
 
-impl<'a> Widget<()> for Row<'a>{
-    fn render(&mut self, ctx: &mut CTX<()>) -> (f64, f64) {
-        //TODO: render the child nodes
-        (self.render_childs)(ctx);
-        (0.0,0.0)
-    }
+impl<F> Row<F> where F: Fn(&mut Context<()>){
+	/// Create a new layout element with a defined spacing and a function
+	/// to render its child nodes. The child nodes. These nodes are rendered
+	/// foreahead to measure their size and then there position is calculated
+	/// based on this measurements. This is relatively processing intensive
+	/// and thus will be chached
+	pub fn new(spacing: f64, render_childs: F) -> Row<F>{
+		Row{
+			render_childs: render_childs,
+			spacing: spacing
+		}
+	}
 }
 
-impl<'a> Row<'a>{
-    #[inline(always)]
-    pub fn childs(&mut self, c:|&mut CTX<()>|:'a) {
-        self.render_childs = c;
-    }
+impl<F> Widget for Row<F> where F: Fn(&mut Context<()>){
+	type Event = ();
+
+	fn render(&self, ctx: &mut Context<()>) -> (f64, f64) {
+		//TODO: check if changed, and already calculated, if so
+			//TODO: create a fake context
+			//TODO: call the render_childs funktion with this context
+			//TODO: save the extracted sizes as a state for later use
+			//TODO: calculate position
+
+		(self.render_childs)(ctx);//call with real context to the screen
+		(0.0,0.0)
+	}
 }
+
 
 ///Layout for placing into a column
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct Col{
     pub spacing: f64,
 }
 
 ///Layout management for all widgets.
 ///It specifies the size of a widget
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum Layout{
     ///make it large enough for its content
     Fit,

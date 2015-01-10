@@ -10,7 +10,7 @@ readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
 
 [dependencies.cairo]
-git = "https://github.com/enex/rust-cairo"
+git="https://github.com/enex/rust-cairo"
 
 [dependencies]
-sdl2 = "0.0.11"
+sdl2 = "*"

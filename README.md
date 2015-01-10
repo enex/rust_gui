@@ -4,6 +4,10 @@ Little an simple gui library for rust inspired by react.
 gui and uses cairo as backend library for rendering.
 But this will may change in the future.
 
+Librarys to watch:
+ - https://github.com/cyderize/cairo-rs
+ - https://github.com/passcod/rust-cairo
+
 ## Konzept
 
 Ein Programm besteht aus mehreren Komponenten. Jedes dieser komponenten kann dafür sorgen, das
