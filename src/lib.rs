@@ -25,7 +25,7 @@ pub trait Widget{
     /// the state of the component gets passed as a imutable reference, so this rutine is not
     /// able to change anything.
     /// It returns the (width, hight) of the area affected by the render method
-    fn render(&self, ctx: &mut Context<Self::Event>) -> (f64, f64);
+    fn render(&self, ctx: &mut Context<Self::Event>);
 
     /// Method which is used by the layout engine to get the size of a component
     /// by default the size will be calculated by using the render function with

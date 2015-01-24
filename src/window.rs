@@ -14,15 +14,15 @@ use Context;
 /// Sdl2 is used as the interface to the window manager and cairo for rendering.
 pub struct Window{
     ///delay betwen event checks default is 10
-    pub delay: uint,
+    pub delay: usize,
     ///sdl2 Window
     pub window: sdl2::video::Window,
     ///id of the currently drawing component
-    current_id: Vec<uint>,
+    current_id: Vec<usize>,
     ctx: cairo::Context,//cairo context for drawing
     //state: Vec<state::Container>,//store for state
     ///id of the currently selected element
-    pub focused: Vec<uint>,
+    pub focused: Vec<usize>,
 }
 
 /// Events are handled with moved closures as filters that means
@@ -34,7 +34,7 @@ pub struct Window{
 
 impl Window{
     /// create a new window with given title, width and height
-    pub fn new(title: &str, width: int, height: int) -> Window {
+    pub fn new(title: &str, width: isize, height: isize) -> Window {
         sdl2::init(sdl2::INIT_EVERYTHING);
 
         let window = sdl2::video::Window::new(title, WindowPos::PosCentered, WindowPos::PosCentered, width, height, OPENGL).unwrap();
@@ -69,8 +69,8 @@ impl Window{
         }
     }
 
-    /// function which takes the render function to generate the content, and then listens for input events
-    /// it will return, if the window has been closed.
+    /// function which takes the render function to generate the content, and then
+    /// listens for input events it will return, if the window has been closed.
     pub fn show<F>(&mut self, render: F) where F:  Fn(&mut CTX){
         //self.window.show();
         self.update();
@@ -101,13 +101,13 @@ impl Window{
     }
 
     /// search the state of a component by Id
-    pub fn find_state<T>(&self, id: Vec<uint>) -> Option<T>{
+    pub fn find_state<T>(&self, id: Vec<usize>) -> Option<T>{
         //TODO: implement functionality
         unimplemented!()
     }
 
     /// set the state
-    pub fn set_state<T:Any+Clone+Eq>(&self, id: Vec<uint>, v: T){
+    pub fn set_state<T:Any+Clone+Eq>(&self, id: Vec<usize>, v: T){
         unimplemented!()
     }
 
@@ -154,13 +154,13 @@ impl Window{
 
     /// get the size of the window
     #[inline(always)]
-    pub fn get_size(&self) -> (int, int){
+    pub fn get_size(&self) -> (isize, isize){
         self.window.get_size()
     }
 
     //get size of the canvas to draw on
     #[inline(always)]
-    pub fn get_draw_size(&self) -> (int, int){
+    pub fn get_draw_size(&self) -> (isize, isize){
         self.window.get_drawable_size()
     }
 }

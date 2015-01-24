@@ -4,7 +4,3 @@ use Context;
 pub struct CTX{
     pub children: Vec<Widget>
 }
-
-impl Context<()> for CTX{
-    fn add()
-}

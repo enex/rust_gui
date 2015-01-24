@@ -1,5 +1,4 @@
 [package]
-
 name = "gui"
 version = "0.0.0"
 repository = "https://github.com/enex/rust-gui.git"
