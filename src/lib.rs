@@ -55,3 +55,10 @@ pub trait Context<Ev> where Ev: Sized{
     ///access the current position
     fn get_pos() -> (f64, f64){(0.0,0.0)}
 }
+
+/// A trait which should be implemented by every Widget featuring child widgets
+/// like layout or Tabs or somthing like this.
+pub trait Children{
+	/// builder pattern like function which makes defining child nodes possible
+	fn children() -> Self;
+}

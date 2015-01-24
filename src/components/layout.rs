@@ -24,7 +24,7 @@ impl<F> Row<F> where F: Fn(&mut Context<()>){
 impl<F> Widget for Row<F> where F: Fn(&mut Context<()>){
 	type Event = ();
 
-	fn render(&self, ctx: &mut Context<()>) -> (f64, f64) {
+	fn render(&self, ctx: &mut Context<()>) {
 		//TODO: check if changed, and already calculated, if so
 			//TODO: create a fake context
 			//TODO: call the render_childs funktion with this context
@@ -32,7 +32,6 @@ impl<F> Widget for Row<F> where F: Fn(&mut Context<()>){
 			//TODO: calculate position
 
 		(self.render_childs)(ctx);//call with real context to the screen
-		(0.0,0.0)
 	}
 }
 

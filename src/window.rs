@@ -5,7 +5,7 @@ use ctx::CTX;
 
 use sdl2::video::{OPENGL, WindowPos};
 use sdl2::event::{poll_event};
-use sdl2::event::Event;//reexprot events
+pub use sdl2::event::Event;//reexprot events
 use std::any::Any;
 use Context;
 

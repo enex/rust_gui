@@ -1,50 +1,42 @@
 extern crate gui;
 
-/*use gui::components::*;
+use std::collections::DList;
+use gui::components::*;
+use gui::Widget;
+use gui::Context;
 
-pub struct Item{
-    pub
-}
+//this is the model which will be rendered
 
-struct TodoAppState{
-    new_val: String,
-    list: Vec<
-}
-
-pub struct TodoApp{}
-
-impl TodoApp{
-    pub fn new() -> TodoApp{
-        TodoApp{}
-    }
-}
-impl Widget for TodoApp{
-    fn render(&mut self, ctx: gui::Contect){
-        ctx.add(TextInput, Some(|event|match event{
-            CheckboxEvent::Change(nv) => ctx.set_state((ctx.get_state))
-        }));
-        ctx.add(Button, Some(|event|match event{
-            ButtonEvent::Click =>
-        }));
-    }
-}
-
+#[derive(Show)]
 pub struct Task{
-    done: bool,
+    pub done: bool,
     ///the description of the Task
-    desc: String,
+    pub desc: String,
 }
 
+#[derive(Show)]
 pub struct List{
     ///All Tasks
-    tasks: Vec<Task>,
-}*/
+    pub tasks: DList<Task>,
+    ///value for the task going to be inserted
+    pub input: String,
+}
+
+pub struct App<'a>{
+    data: &'a mut List
+}
+impl<'a> Widget for App<'a>{
+    type Event = ();
+    fn render(&self, ctx: &mut Context<()>){
+        //ctx.add()
+    }
+}
 
 fn main(){
     //show the window
-    /*let mut list = List{
-        Vec<Task>
-    }*/
-    //gui.Window::new("todo-app",480,640).add(TodoApp::new(&mut list));
+    let mut list = List{
+        tasks: DList::new(),
+        input: String::new(),
+    };
+    gui::Window::new("todo-app",480,640);
 }
-
