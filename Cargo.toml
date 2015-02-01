@@ -4,7 +4,7 @@ version = "0.0.0"
 repository = "https://github.com/enex/rust-gui.git"
 license = "LGPL"
 authors = ["enex <sive@web.de>"]
-keywords = ["SDL", "windowing", "graphics", "gui", "react", "dataflow"]
+keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cairo", "2d", "visual", "vector"]
 readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
 
