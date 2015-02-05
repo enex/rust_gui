@@ -2,12 +2,12 @@ use Widget;
 use Context;
 
 ///Layout for placing everything in a row
-pub struct Row<F> where F: Fn(&mut Context<()>){
+pub struct Row<F> where F: Fn(&mut Context){
     pub spacing: f64,
     pub render_childs: F,
 }
 
-impl<F> Row<F> where F: Fn(&mut Context<()>){
+impl<F> Row<F> where F: Fn(&mut Context){
 	/// Create a new layout element with a defined spacing and a function
 	/// to render its child nodes. The child nodes. These nodes are rendered
 	/// foreahead to measure their size and then there position is calculated
@@ -21,10 +21,10 @@ impl<F> Row<F> where F: Fn(&mut Context<()>){
 	}
 }
 
-impl<F> Widget for Row<F> where F: Fn(&mut Context<()>){
+impl<F> Widget for Row<F> where F: Fn(&mut Context){
 	type Event = ();
 
-	fn render(&self, ctx: &mut Context<()>) {
+	fn render(&self, ctx: &mut Context) {
 		//TODO: check if changed, and already calculated, if so
 			//TODO: create a fake context
 			//TODO: call the render_childs funktion with this context

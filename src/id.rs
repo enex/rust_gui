@@ -1,5 +1,7 @@
 pub type ID = [u16;12];
 
+pub const NullID: ID = [0,0,0,0,0,0,0,0,0,0,0,0];
+
 mod experiment{
     use std::iter::Iterator;
     #[derive(Copy, Clone, Show)]

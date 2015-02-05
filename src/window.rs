@@ -30,6 +30,8 @@ pub struct Window{
     ///id of the currently drawing component
     ctx: cairo::Context,//cairo context for drawing
     state: HashMap<ID, Box<Any + 'static>>,
+    event_listener: Vec<(ID, Box<Fn(&Event)+'static>)>,
+    event: Event,
     //id of the currently selected element
     //pub focused: ID,
 }
@@ -74,6 +76,8 @@ impl Window{
             window: window,
             ctx: cr,
             state: HashMap::new(),
+            event_listener: Vec::new(),
+            event: Event::None,
             //focused: [0,0,0,0,0,0,0,0,0,0,0,0],
         }
     }
@@ -85,18 +89,28 @@ impl Window{
     pub fn show<F>(&mut self, render: F) where F:  Fn(&mut Context){
         //self.window.show();
         self.update();
-        //initial draw:
-        self.cairo_context().save();
-        {
-            let mut c = Context::new(self);
-            render(&mut c);
+
+        macro_rules! draw{//macro to draw
+            ($e:expr) => ({
+                self.cairo_context().save();
+                {
+                    let mut c = $e;
+                    render(&mut c);
+                }
+                self.cairo_context().restore();
+                self.update();
+            });
+            () => ({
+                draw!(Context::new(self));
+            });
         }
-        self.cairo_context().restore();
-        self.update();
+
+        draw!();
 
         'main : loop {
             'event : loop {
-                match sdl2::event::poll_event() {
+                self.event = sdl2::event::poll_event();
+                match self.event {
                     Event::Quit{..} => break 'main,
                     Event::KeyDown{
                         timestamp: _,
@@ -107,8 +121,9 @@ impl Window{
                             break 'main
                         }
                     },
-                    Event::MouseMotion{x: x, y: y, ..}=>{
+                    Event::MouseMotion{..} => {
                         println!("mouse move");
+                        draw!(Context::new_event(self));
                     },
                     Event::None => break 'event,
                     _ => sdl2::timer::delay(self.delay)
@@ -165,6 +180,10 @@ impl Window{
     /// set the state
     pub fn set_state<T>(&mut self, id: ID, v: Box<T>) where T:Any+Clone+Eq+'static{
         self.state.insert(id, v as Box<Any + 'static>);
+    }
+
+    pub fn register_event_listener<F>(&mut self, id: ID, listener: Box<F>) where F: Fn(&Event)+'static{
+        self.event_listener.push((id, listener));
     }
 
     /// get the ciro drawing context to draw on it
