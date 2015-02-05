@@ -6,7 +6,7 @@ use gui::{Widget, Context, App};
 
 //this is the model which will be rendered
 
-#[derive(Show)]
+#[derive(Debug)]
 pub struct Task{
     pub done: bool,
     ///the description of the Task
@@ -16,7 +16,7 @@ pub struct Task{
 impl Widget for Task{
     fn render(&self, ctx: &mut Context){
         println!("render Task");
-        ctx.add(1, Label::new(self.desc.as_slice()).font_size(16.0));
+        ctx.add(1, Label::new(&self.desc[0..]).font_size(16.0));
     }
 }
 
@@ -35,7 +35,7 @@ impl TodoApp{
         }
     }
     /// append a new task to the todo list
-    fn appendItem(&mut self, desc: &str){
+    fn append_item(&mut self, desc: &str){
         self.tasks.push_back(Task{
             done: false,
             desc: desc.to_string(),
@@ -61,7 +61,7 @@ impl App for TodoApp{
 
 fn main(){
     let mut ta = TodoApp::new();
-    ta.appendItem("Sichtbar Machen");
-    ta.appendItem("Hausaufgaben erledigen");
+    ta.append_item("Sichtbar Machen");
+    ta.append_item("Hausaufgaben erledigen");
     gui::Window::new("todo-app", 480, 640).app(&mut ta);
 }
