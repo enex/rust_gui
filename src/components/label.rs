@@ -7,6 +7,7 @@ pub struct Label<'a>{
     pub font_size: f64,
     //TODO: add other text styling options
     pub font_face: &'a str,
+    pub color: (f64, f64, f64),
 }
 
 impl<'a> Label<'a>{
@@ -15,6 +16,7 @@ impl<'a> Label<'a>{
             text: text,
             font_size: 20.0,
             font_face: "Sans",
+            color: (0.,0.,0.),
         }
     }
 }
@@ -39,7 +41,8 @@ macro_rules! setter{
 setter!(Label<'a>,
     text: &'a str,
     font_size: f64,
-    font_face: &'a str
+    font_face: &'a str,
+    color: (f64,f64,f64)
 );
 
 pub enum LabelEvent{
@@ -54,7 +57,8 @@ impl<'a> Widget for Label<'a>{
                 use std::ffi::CString;
 
                 let cr = c.cairo_ptr();
-                ffi::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+                let (r,g,b) = self.color;
+                ffi::cairo_set_source_rgb(cr, r, g, b);
                 ffi::cairo_select_font_face(cr, CString::from_slice(self.font_face.as_bytes()).as_ptr(), ffi::CAIRO_FONT_SLANT_NORMAL, ffi::CAIRO_FONT_WEIGHT_NORMAL);
                 ffi::cairo_set_font_size(cr, self.font_size);
 

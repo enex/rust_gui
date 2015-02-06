@@ -12,4 +12,4 @@ homepage = "https://github.com/enex/rust-gui"
 git="https://github.com/enex/rust-cairo"
 
 [dependencies]
-sdl2 = "*"
+sdl2 = "0.0.*"

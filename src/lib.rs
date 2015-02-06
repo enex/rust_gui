@@ -2,7 +2,9 @@
 #![unstable]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
-
+#![feature(box_syntax)]
+#![feature(core)]
+#![feature(libc)]
 extern crate libc;
 extern crate cairo;
 extern crate sdl2;
@@ -11,6 +13,7 @@ pub use sdl2::event::{Event, EventType};//reexprot events
 pub use window::Window;
 pub use context::Context;
 pub use id::ID;
+pub use sdl2::mouse::{Cursor,get_cursor, SystemCursor, Mouse};
 
 pub mod context;
 pub mod components;
@@ -59,11 +62,52 @@ pub trait App{
 	fn start(&mut self){}
 }
 
-//these traits are there to manipulate the state
-
-pub trait ImmutableState{
-	fn get_state();
+/// The color Trait which should be implemented by every color used
+pub trait Color{
+    fn cairo_color_rgb(&self) -> (f64,f64,f64){
+        let (r,g,b,_) = self.cairo_color_rgba();
+        (r,g,b)
+    }
+    fn cairo_color_rgba(&self) -> (f64,f64,f64,f64);
+    fn red(&self) -> f64{
+        let (r,_,_) = self.cairo_color_rgb();
+        r
+    }
+    fn green(&self) -> f64{
+        let (_,g,_) = self.cairo_color_rgb();
+        g
+    }
+    fn blue(&self) -> f64{
+        let (_,_,b) = self.cairo_color_rgb();
+        b
+    }
+    fn alpha(&self) -> f64{
+        let (_,_,_,a) = self.cairo_color_rgba();
+        a
+    }
 }
-pub trait MutState: ImmutableState{
-	fn set_state();
+
+//TODO: implement the colors and define some default colors
+
+pub struct RGB{
+    r: u8,
+    g: u8,
+    b: u8,
+}
+impl Color for RGB{
+    fn cairo_color_rgba(&self) -> (f64,f64,f64,f64){
+        ((self.r as f64)/255., (self.g as f64)/255., (self.b as f64)/255., 1.0)
+    }
+}
+
+pub struct RGBA{
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
+impl Color for RGBA{
+    fn cairo_color_rgba(&self) -> (f64,f64,f64,f64){
+        ((self.r as f64)/255., (self.g as f64)/255., (self.b as f64)/255., (self.a as f64)/255.)
+    }
 }

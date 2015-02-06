@@ -1,8 +1,8 @@
 use Widget;
-use CTX;
+use Context;
 use Event;
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct Slider{
     pub max_value: f64,
     pub step_size: f64,
@@ -19,7 +19,7 @@ impl Slider{
     }
 }
 
-#[deriving(Clone, Show, Copy)]
+#[derive(Clone, Show, Copy)]
 pub enum SliderEvent{
     ///Mouse hovers the slider
     Hover,
@@ -30,10 +30,26 @@ pub enum SliderEvent{
 //TODO: implement drag and drop behavior
 //TODO: implement layout fill
 
-impl Widget<SliderEvent> for Slider{
-    fn render(&mut self, ctx: &mut CTX<SliderEvent>) -> (f64, f64) {
-        let mut hover = false;
-        ctx.mouseover((100.0, 10.0), |event, ctx|{
+impl Widget for Slider{
+    fn render(&self, ctx: &mut Context) {
+        let mut focused = ctx.focused();
+        let (px, py) = ctx.pos();
+        let (sx, sy) = (px+100.0, py+10.0);
+        ctx.on(box move |e, h| match e{
+            &Event::MouseMotion{..} =>{
+                //ctx.emit(SliderEvent::Hover);//emit focused event
+            },
+            &Event::MouseButtonDown{x,y, ..}
+                if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy))=> {
+                //TODO: calculate new value
+                //let e = ctx.x();
+                //println!("{}",e);
+                //ctx.emit(SliderEvent::Changed(((x as f64) - e)/100.0 * self.max_value));
+                h.focus();//set this to the currently focused element
+            },
+            _ => {}
+        });
+        /*ctx.mouseover((100.0, 10.0), |event, ctx|{
             println!("button event: {}", event);
             hover = true;
             match event{
@@ -48,7 +64,7 @@ impl Widget<SliderEvent> for Slider{
                 },
                 _ => {}
             }
-        });
+        });*/
         ctx.draw(|c|{ //right now the cairo wrapper does not offer an abstract way for text rendering
             c.set_source_rgb(0.6, 0.6, 0.6);
             c.move_to(0.0,5.0);
@@ -56,11 +72,10 @@ impl Widget<SliderEvent> for Slider{
             c.stroke();
             c.set_source_rgb(0.35,0.4,0.8);
             c.arc((self.value / self.max_value) * 100.0, 5.0, 5.0, 0.0, 360.0);
-            if hover{
+            if focused{
                 c.fill();
             }
             c.stroke();
         });
-        (0.0,0.0)
     }
 }

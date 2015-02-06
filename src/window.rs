@@ -10,14 +10,8 @@ use std::collections::HashMap;
 use Context;
 use App;
 use ID;
-use std::any::TypeId;
-use std::mem::forget;
-use std::collections::hash_map;
-use std::hash::{Hasher, Writer};
-use std::collections::hash_state::HashState;
-use std::mem::transmute;
-use std::raw::TraitObject;
-
+use context::EventHandle;
+use id::NullID;
 
 /// Struct of a desktop app which is the basic setup
 /// it includes everything nedded for a desktop application.
@@ -30,10 +24,10 @@ pub struct Window{
     ///id of the currently drawing component
     ctx: cairo::Context,//cairo context for drawing
     state: HashMap<ID, Box<Any + 'static>>,
-    event_listener: Vec<(ID, Box<Fn(&Event)+'static>)>,
+    event_listener: HashMap<ID, Box<Fn(&Event, &mut EventHandle)+'static>>,
     event: Event,
     //id of the currently selected element
-    //pub focused: ID,
+    pub focused: ID,
 }
 
 /// Events are handled with moved closures as filters that means
@@ -63,12 +57,10 @@ impl Window{
                 (*ss).h,
                 (*ss).pitch
             );
-            if(surface.is_null()){
+            if surface.is_null(){
                 panic!("could not create surface");
             }
-            unsafe{
-                cairo::Context::from_raw(surface)
-            }
+            cairo::Context::from_raw(surface)
         }.unwrap();
 
         Window{
@@ -76,23 +68,29 @@ impl Window{
             window: window,
             ctx: cr,
             state: HashMap::new(),
-            event_listener: Vec::new(),
+            event_listener: HashMap::new(),
             event: Event::None,
-            //focused: [0,0,0,0,0,0,0,0,0,0,0,0],
+            focused: NullID,
         }
     }
 
     //TODO: combine show and app so that content is not duplicated
+    //TODO: implement event propagation
+    //TODO: only redraw if neccessary by tracking changes
+    //TODO: only redraw changes and use caching
 
     /// function which takes the render function to generate the content, and then
     /// listens for input events it will return, if the window has been closed.
     pub fn show<F>(&mut self, render: F) where F:  Fn(&mut Context){
+        use Cursor;
+        use SystemCursor;
         //self.window.show();
         self.update();
 
         macro_rules! draw{//macro to draw
             ($e:expr) => ({
                 self.cairo_context().save();
+                self.cairo_context().paint();
                 {
                     let mut c = $e;
                     render(&mut c);
@@ -103,6 +101,17 @@ impl Window{
             () => ({
                 draw!(Context::new(self));
             });
+        }
+
+        //does event handling and redraw
+        macro_rules! handle_event{
+            () => ({
+                for (id, ref f) in self.event_listener.iter(){
+                        let mut e = EventHandle::new(id, &mut self.state, &mut self.focused);
+                        (*f)(&self.event, &mut e);
+                }
+                draw!();
+            })
         }
 
         draw!();
@@ -121,9 +130,10 @@ impl Window{
                             break 'main
                         }
                     },
-                    Event::MouseMotion{..} => {
-                        println!("mouse move");
-                        draw!(Context::new_event(self));
+                    Event::MouseMotion{..} => handle_event!(),
+                    Event::MouseButtonDown{..} => {
+                        handle_event!();
+                        println!("focus: {:?}", self.focused);
                     },
                     Event::None => break 'event,
                     _ => sdl2::timer::delay(self.delay)
@@ -182,8 +192,8 @@ impl Window{
         self.state.insert(id, v as Box<Any + 'static>);
     }
 
-    pub fn register_event_listener<F>(&mut self, id: ID, listener: Box<F>) where F: Fn(&Event)+'static{
-        self.event_listener.push((id, listener));
+    pub fn register_event_listener<F>(&mut self, id: ID, listener: Box<F>) where F: Fn(&Event, &mut EventHandle)+'static{
+        self.event_listener.insert(id, listener);
     }
 
     /// get the ciro drawing context to draw on it
@@ -210,7 +220,7 @@ impl Window{
     /// set the title of the window
     #[inline(always)]
     pub fn title(&mut self, val: String){
-        self.window.set_title(val.as_slice());
+        self.window.set_title(&val[0..]);
     }
 
     /// get title of the window

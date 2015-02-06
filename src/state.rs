@@ -1,9 +1,5 @@
 use Window;
-use std::any::TypeId;
 use std::mem::forget;
-use std::collections::hash_map;
-use std::hash::{Hasher, Writer};
-use std::collections::hash_state::HashState;
 use std::mem::transmute;
 use std::raw::TraitObject;
 use std::any::Any;

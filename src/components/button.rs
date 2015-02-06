@@ -2,6 +2,7 @@ use Widget;
 use Context;
 use components::Label;
 use Event;
+use SystemCursor;
 
 #[derive(Show, Copy)]
 pub enum ButtonEvent{
@@ -15,6 +16,7 @@ pub struct Button<'a>{
     pub text: &'a str,
     pub width: f64,
     pub height: f64,
+    pub background_color: (f64, f64, f64),
 }
 
 impl<'a> Button<'a>{
@@ -23,6 +25,7 @@ impl<'a> Button<'a>{
             text: text,
             width: width,
             height: height,
+            background_color: (0.5,0.5,0.5),//#4285f4
         }
     }
 }
@@ -71,37 +74,45 @@ macro_rules! setter{
 setter!(Button<'a>,
     width: f64,
     height: f64,
-    text: &'a str
+    text: &'a str,
+    background_color: (f64,f64,f64)
 );
 
 impl<'a> Widget for Button<'a>{
     fn render(&self, ctx: &mut Context) {
-        /*let mut hover = false;
-        ctx.mouseover((self.width, self.height), |event, ctx|{
-            //println!("button event: {}", event);
-            hover = true;
-            match event{
-                &Event::MouseMotion(_, _, _, _, _, _, _, _) =>{
-                    ctx.emit(ButtonEvent::Hover);//emit hover event
-                },
-                &Event::MouseButtonDown(_, _, _, _, _, _) => {
-                    ctx.emit(ButtonEvent::Click);
-                },
-                _ => {}
-            }
-        });*/
-        ctx.draw(|c|{
-            /*if hover{
+        let hover = ctx.focused();
+
+        //some values for the event listener
+        let (px, py) = ctx.pos();
+        let (sx, sy) = (px+self.width, py+self.height);
+
+        ctx.on(box move |e,h|match e{
+            &Event::MouseButtonDown{x,y,..}
+                if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy)) => {
+                h.focus();
+                println!("Button-event: {:?} {} ({}|{})",e, h.focused(), px, py);
+            },
+            &Event::MouseMotion{x, y, ..}
+                if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy)) => {
+                h.set_cursor(SystemCursor::Crosshair);
+                //println!("set to hand");
+            },
+            _ => {}
+        });
+
+        //TODO: if focused make click on enter
+        ctx.draw(move |c|{
+            if hover{
                 c.set_source_rgb(0.55, 0.55, 0.95);
-            }else{*/
+            }else{
                 c.set_source_rgb(0.27, 0.36, 0.93);
-            /*}*/
+            }
             c.rectangle(0.0, 0.0, self.width, self.height);
             c.fill();
             c.stroke();
         });
         //ctx.go_to(0.0,0.0);
-        //ctx.go_to(3.0, 0.0);
+        ctx.goto(3.0, 0.0);
         ctx.add(1, Label::new(self.text.clone()).font_size(self.height - 4.0))
     }
     fn size(&self) -> (f64, f64) {
