@@ -5,4 +5,4 @@
 pub type ID = [u16;12];
 
 ///The null id
-pub const NullID: ID = [0,0,0,0,0,0,0,0,0,0,0,0];
+pub const NULL_ID: ID = [0,0,0,0,0,0,0,0,0,0,0,0];

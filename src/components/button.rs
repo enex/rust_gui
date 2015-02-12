@@ -4,14 +4,14 @@ use components::Label;
 use Event;
 use SystemCursor;
 
-#[derive(Show, Copy)]
+#[derive(Debug, Copy)]
 pub enum ButtonEvent{
     Click,//click event on mouse down
     Hover,//if mose move and mouse over button
     Leave
 }
 
-#[derive(Clone, Show)]
+#[derive(Debug)]
 pub struct Button<'a>{
     pub text: &'a str,
     pub width: f64,

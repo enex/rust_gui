@@ -19,7 +19,7 @@ impl Slider{
     }
 }
 
-#[derive(Clone, Show, Copy)]
+#[derive(Clone, Debug, Copy)]
 pub enum SliderEvent{
     ///Mouse hovers the slider
     Hover,

@@ -13,10 +13,10 @@ pub use self::slider::{Slider, SliderEvent};
 
 //pub use self::checkbox::{Checkbox, CheckboxEvent};
 
-//pub use self::text_input::{TextInput, TextInputEvent};
+pub use self::text_input::{TextInput, TextInputEvent};
 
 //pub mod image;
-//pub mod text_input;
+pub mod text_input;
 //pub mod tabs;
 
 pub mod slider;

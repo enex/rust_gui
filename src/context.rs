@@ -3,11 +3,10 @@ use cairo;
 use Widget;
 use Event;
 use ID;
-use id::NullID;
+use id::NULL_ID;
 use std::any::Any;
 use std::collections::HashMap;
 use SystemCursor;
-use get_cursor;
 use Cursor;
 
 pub struct Context<'a>{
@@ -24,7 +23,7 @@ impl<'a> Context<'a>{
         Context{
             window: window,
             depth: 0,
-            id: NullID,
+            id: NULL_ID,
             event: false,
             x: 0.,
             y: 0.,
@@ -35,7 +34,7 @@ impl<'a> Context<'a>{
         Context{
             window: window,
             depth: 0,
-            id: NullID,
+            id: NULL_ID,
             event: true,
             x: 0.,
             y: 0.,
@@ -74,7 +73,7 @@ impl<'a> Context<'a>{
     /// This is usefull if managing the whole application from the root component is
     /// Too complicated and splitting it to components is perefered.
     pub fn add_with_state(&mut self, id: u16, widget: &Widget){
-
+        self.add(id, widget);
     }
 
     /// the id of the current component
@@ -106,8 +105,11 @@ impl<'a> Context<'a>{
 
     /// get the state of the current component if it is already set,
     /// if not it returns none
-    pub fn state<T>() -> Option<T>{
-        None
+    pub fn state<T>(&self) -> Option<&T> where T:Any+'static{
+        use state::UncheckedAnyRefExt;
+        self.window.state.get(&self.id).map(|any|{
+            unsafe{ (*any).downcast_ref_unchecked::<T>()}
+        })
     }
 
     /// move the current possition that newly added elements will be placed some
@@ -120,9 +122,14 @@ impl<'a> Context<'a>{
     }
 
     ///get the vurrent position
-    pub fn pos(&self) -> (f64, f64){(self.x, self.y)}
-    pub fn pos_x(&self) -> f64{self.x}
-    pub fn pos_y(&self) -> f64{self.y}
+    pub fn pos(&mut self) -> (f64, f64){
+        let mut x = 0.;
+        let mut y = 0.;
+        self.window.cairo_context().user_to_device(&mut x, &mut y);
+        (x, y)
+    }
+    pub fn pos_x(&mut self) -> f64{let (x,_) = self.pos(); x}
+    pub fn pos_y(&mut self) -> f64{let (_,y) = self.pos(); y}
 }
 
 pub struct EventHandle<'a>{
@@ -140,6 +147,8 @@ impl<'a> EventHandle<'a>{
         }
     }
 
+    //TODO: make shure the type is correct
+
     /// get the state of the component
     pub fn state<T>(&self) -> Option<&T> where T:Any+'static{
         use state::UncheckedAnyRefExt;
@@ -148,12 +157,15 @@ impl<'a> EventHandle<'a>{
         })
     }
     /// set the state of the component
-    pub fn set_state(){
-
+    pub fn set_state<T>(&mut self, s: Box<T>) where T:Any+Eq+'static{
+        self.state.insert(*self.id, s as Box<Any + 'static>);
     }
     /// get mutable reference to state of the widget
-    pub fn mut_state(&mut self){
-
+    pub fn mut_state<T>(&mut self) -> Option<&mut T> where T:Any+'static{
+        use state::UncheckedAnyMutRefExt;
+        self.state.get_mut(self.id).map(|any|{
+            unsafe{ (*any).downcast_mut_unchecked::<T>()}
+        })
     }
 
     /// emit an event for parent widgets
@@ -172,7 +184,7 @@ impl<'a> EventHandle<'a>{
 
     /// set the cursor to one of the system cursors.
     pub fn set_cursor(&mut self, cursor: SystemCursor){
-        use sdl2::mouse::show_cursor;
+        //use sdl2::mouse::show_cursor;
         //TODO: make this work somehow
 
         match Cursor::from_system(cursor){

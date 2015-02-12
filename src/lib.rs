@@ -5,6 +5,8 @@
 #![feature(box_syntax)]
 #![feature(core)]
 #![feature(libc)]
+#![feature(std_misc)]
+
 extern crate libc;
 extern crate cairo;
 extern crate sdl2;
@@ -14,6 +16,7 @@ pub use window::Window;
 pub use context::Context;
 pub use id::ID;
 pub use sdl2::mouse::{Cursor,get_cursor, SystemCursor, Mouse};
+pub use sdl2::keyboard;
 
 pub mod context;
 pub mod components;

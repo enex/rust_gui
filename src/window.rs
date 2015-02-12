@@ -11,7 +11,7 @@ use Context;
 use App;
 use ID;
 use context::EventHandle;
-use id::NullID;
+use id::NULL_ID;
 
 /// Struct of a desktop app which is the basic setup
 /// it includes everything nedded for a desktop application.
@@ -23,7 +23,7 @@ pub struct Window{
     pub window: sdl2::video::Window,
     ///id of the currently drawing component
     ctx: cairo::Context,//cairo context for drawing
-    state: HashMap<ID, Box<Any + 'static>>,
+    pub state: HashMap<ID, Box<Any + 'static>>,
     event_listener: HashMap<ID, Box<Fn(&Event, &mut EventHandle)+'static>>,
     event: Event,
     //id of the currently selected element
@@ -64,13 +64,13 @@ impl Window{
         }.unwrap();
 
         Window{
-            delay: 12,
+            delay: 20,//12,
             window: window,
             ctx: cr,
             state: HashMap::new(),
             event_listener: HashMap::new(),
             event: Event::None,
-            focused: NullID,
+            focused: NULL_ID,
         }
     }
 
@@ -82,8 +82,6 @@ impl Window{
     /// function which takes the render function to generate the content, and then
     /// listens for input events it will return, if the window has been closed.
     pub fn show<F>(&mut self, render: F) where F:  Fn(&mut Context){
-        use Cursor;
-        use SystemCursor;
         //self.window.show();
         self.update();
 
@@ -118,25 +116,18 @@ impl Window{
 
         'main : loop {
             'event : loop {
-                self.event = sdl2::event::poll_event();
+                self.event = sdl2::event::wait_event().unwrap();
                 match self.event {
                     Event::Quit{..} => break 'main,
                     Event::KeyDown{
                         timestamp: _,
                         keycode: key,
                         ..
-                    } => {
-                        if key == sdl2::keycode::KeyCode::Escape {
-                            break 'main
-                        }
-                    },
-                    Event::MouseMotion{..} => handle_event!(),
-                    Event::MouseButtonDown{..} => {
-                        handle_event!();
-                        println!("focus: {:?}", self.focused);
+                    } if key == sdl2::keycode::KeyCode::Escape => {
+                        break 'main
                     },
                     Event::None => break 'event,
-                    _ => sdl2::timer::delay(self.delay)
+                    _ => handle_event!()//sdl2::time::delay(self.delay)
                 }
             }
         }

@@ -20,7 +20,7 @@ impl Widget for Task{
     }
 }
 
-#[derive(Show)]
+#[derive(Debug)]
 pub struct TodoApp{
     ///All Tasks
     pub tasks: DList<Task>,

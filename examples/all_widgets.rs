@@ -1,6 +1,6 @@
 extern crate gui;
 
-use gui::components::{Button, Slider, Label};
+use gui::components::{Button, Slider, Label, TextInput};
 //TODO: insert widgets here
 
 fn main(){
@@ -14,5 +14,7 @@ fn main(){
         ctx.add(4, Label::new("Test-Label").color((0.3,0.5,0.6)));
         ctx.goto(0.,20.);
         ctx.add(4, Label::new("Test-Label").color((0.7,0.5,0.6)));
+        ctx.goto(250.,0.);
+        ctx.add(5, &TextInput::new("Wert", "placeholder"));
     });
 }
