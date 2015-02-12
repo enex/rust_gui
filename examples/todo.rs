@@ -1,8 +1,8 @@
-extern crate gui;
+extern crate rui;
 
 use std::collections::DList;
-use gui::components::*;
-use gui::{Widget, Context, App};
+use rui::components::*;
+use rui::{Widget, Context, App};
 
 //this is the model which will be rendered
 
@@ -63,5 +63,5 @@ fn main(){
     let mut ta = TodoApp::new();
     ta.append_item("Sichtbar Machen");
     ta.append_item("Hausaufgaben erledigen");
-    gui::Window::new("todo-app", 480, 640).app(&mut ta);
+    rui::Window::new("todo-app", 480, 640).app(&mut ta);
 }

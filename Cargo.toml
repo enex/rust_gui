@@ -1,5 +1,5 @@
 [package]
-name = "gui"
+name = "rui"
 version = "0.0.0"
 repository = "https://github.com/enex/rust-gui.git"
 license = "LGPL"
@@ -7,6 +7,7 @@ authors = ["enex <sive@web.de>"]
 keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cairo", "2d", "visual", "vector"]
 readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
+description = "react rust ui  a ReactJs like UI library"
 
 [dependencies.cairo]
 git="https://github.com/enex/rust-cairo"

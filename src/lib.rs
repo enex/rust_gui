@@ -1,4 +1,4 @@
-#![crate_name = "gui"]
+#![crate_name = "rui"]
 #![unstable]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]

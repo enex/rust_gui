@@ -1,10 +1,10 @@
-extern crate gui;
+extern crate rui;
 
-use gui::components::{Button, Slider, Label, TextInput};
+use rui::components::{Button, Slider, Label, TextInput};
 //TODO: insert widgets here
 
 fn main(){
-    gui::Window::new("test",640,480).show(|ctx|{
+    rui::Window::new("test",640,480).show(|ctx|{
         ctx.add(1, &Button::new("test-Button",270.,50.));
         ctx.goto(0.,100.);
         ctx.add(2, &Button::new("test-Button2",290.,50.));
