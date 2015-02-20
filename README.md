@@ -3,45 +3,14 @@
 https://github.com/reem/rust-typemap
 
 Little an simple gui library for rust inspired by react.
-gui and uses cairo as backend library for rendering.
-But this will may change in the future.
+gui and uses nanovg as backend library for rendering.
 
-Librarys to watch:
- - https://github.com/cyderize/cairo-rs
- - https://github.com/passcod/rust-cairo
+https://github.com/TomBebbington/glutin should be used as glue to generate the
+opengl context, but it seems not jet ready so sdl2 is used.
 
-## Konzept
-
-Ein Programm besteht aus mehreren Komponenten. Jedes dieser komponenten kann dafür sorgen, das
-es gecachd wird, und das es einen Zustand besitzt.
-
-Der Baum mit den Componenten, wird allerdings nicht beahalten, sondern wenn benötigt lazy
-erstellt. Das heißt es wird kein zusätzlicher Speicherplatz benötigt wenn sich nichts ändert,
-und Änderungen können schnell und einfach geschehen.
-
-Jedes element besitzt eine Render-funktion. In dieser werden die Elemente initialisiert und an
-den context geschickt. Hierbei bekommt jedes Objekt eine ID um.
-
-## Events
-vom Context selbst werden Events bereitgestellt, die von jedem element aboniert werden könne.
-Wenn eines dieser Events auslöst wird die Render-funktion des gesuchten elements aufgerufen, und
-das Event gehandled.
-
-Außerdem können Componenten selbs event bereitstellen. Diese werden vom Context verwalted und
-gehen immer vom Child-Element zum Parent-Element, so das das Parent element diese behandeln kann.
-Events können mit der Funktion `ctx.emit(event: Event);` ausgelößst werden. Sie werden
-übertragen, so bald die Funktion beendet ist. Als Event-Type sind besonders Enums geeignet,
-da ein Widget verschiedene Events haben könnte und so differenziert werden kann.
-
-## Performance
-Parts of the UI are cached for faster rendering.
-Where this is necessary is determined automatically by using timing
-functions to find out what takes how long.
-
-## Zeichnen
-Es wird immer von oben nach unten gezeichnet das heißt bei der Anordnung ist die Reihenfolge zu
-beachten. Um die Position einzelner Komponenten zu bestimmen kann die Parent funktion deren Position
-bestimmen.
+nanovg will be used instead of cairo which I used at first to test my idee, because
+it is more lightweight and i need opengl anyway for other reasons, furthermore
+most of cairos functions aren't needed.
 
 ## TODO:
  - make component system work

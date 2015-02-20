@@ -8,9 +8,25 @@ keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cair
 readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
 description = "react rust ui  a ReactJS like UI library"
-
-[dependencies.cairo]
-git="https://github.com/enex/rust-cairo"
+#build = "build.rs"
 
 [dependencies]
-sdl2 = "0.0.*"
+glutin = "*"
+#freetype-rs = "*"
+#libc = "*"
+#cgmath = "*"
+
+#[dependencies.gfx]
+#git = "http://github.com/gfx-rs/gfx-rs"
+
+#[dependencies.gfx_macros]
+#git = "http://github.com/gfx-rs/gfx-rs"
+#path = "src/gfx_macros"
+#plugin = true
+#version = "0.1.6"
+
+[dependencies.nanovg]
+git="https://github.com/enex/nanovg-rs"
+
+[dependencies.gl]
+git = "https://github.com/bjz/gl-rs"

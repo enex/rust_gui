@@ -11,20 +11,30 @@ pub enum ButtonEvent{
     Leave
 }
 
+/// Usage:
+///	
+/// ```
+/// use gui::components::Button;
+/// 
+/// ctx.add(Button{
+/// 	text: "Button",
+/// 	..Default::default()
+/// });
+/// ```
 #[derive(Debug)]
 pub struct Button<'a>{
     pub text: &'a str,
-    pub width: f64,
-    pub height: f64,
-    pub background_color: (f64, f64, f64),
+    pub width: f32,
+    pub height: f32,
+    pub background_color: (f32, f32, f32),
 }
 
-impl<'a> Button<'a>{
-    pub fn new(text: &'a str, width: f64, height: f64) -> Button<'a>{
+impl<'a> Default for Button<'a>{
+    fn default() -> Button<'a>{
         Button{
-            text: text,
-            width: width,
-            height: height,
+            text: "",
+            width: 100.,
+            height: 100.,
             background_color: (0.5,0.5,0.5),//#4285f4
         }
     }
