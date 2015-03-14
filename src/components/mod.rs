@@ -3,24 +3,26 @@
 
 //pub use self::layout::{Row, Col, Layout};
 
-pub use self::button::{Button, ButtonEvent};
+//pub use self::button::{Button, ButtonEvent};
 
-pub use self::label::Label;
+//pub use self::label::Label;
 
 //pub use self::image::Icon;
 
-pub use self::slider::{Slider, SliderEvent};
+//pub use self::slider::{Slider, SliderEvent};
 
 //pub use self::checkbox::{Checkbox, CheckboxEvent};
 
-pub use self::text_input::{TextInput, TextInputEvent};
+//pub use self::text_input::{TextInput, TextInputEvent};
 
 //pub mod image;
-pub mod text_input;
+//pub mod text_input;
 //pub mod tabs;
 
-pub mod slider;
+//pub mod slider;
 //pub mod checkbox;
 //pub mod layout;
-pub mod button;
-pub mod label;
+//pub mod button;
+//pub mod label;
+
+pub mod icon;

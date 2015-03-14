@@ -1,8 +1,111 @@
-use Window;
 use std::mem::forget;
 use std::mem::transmute;
 use std::raw::TraitObject;
 use std::any::Any;
+use std::collections::{BTreeMap, HashSet};
+use ID;
+use std::default::Default;
+use std::collections::btree_map::Range;
+
+/// this struct is responsible for managing all the state of the gui
+#[derive(Debug)]
+pub struct State{
+    pub state: BTreeMap<ID, Box<Any>>,
+    pub focused: ID,
+    pub hovered: ID,
+	//TODO: add heshset to keep track of widget types
+}
+
+impl State{
+    pub fn new() -> State{
+        Default::default()
+    }
+	/// get a mutable reference to a component state
+	/// if state is not already set, it will be inserted and the default will be returned
+	pub fn get_mut<T>(&mut self, id: &ID) -> &mut T where T: Default + 'static{
+		if !self.state.contains_key(id){
+			let d: Box<T> = Box::new(Default::default());
+			self.state.insert(*id, d);
+		}
+		unsafe{ self.state.get_mut(id).unwrap().downcast_mut_unchecked::<T>() }
+	}
+
+	/// get a immutable ref to the state of the component, if the state is not jet set
+	/// the default value will be returned
+	pub fn get<T>(&mut self, id: &ID) -> &T where T: Default + 'static{
+		if !self.state.contains_key(id){
+			let d: Box<T> = Box::new(Default::default());
+			self.state.insert(*id, d);
+		}
+		unsafe{ self.state.get_mut(id).unwrap().downcast_ref_unchecked::<T>() }
+	}
+
+	/// remove one state
+	pub fn remove(&mut self, id: &ID){
+		self.state.remove(id);
+	}
+	/// remove state and child states
+	pub fn remove_c(&mut self, id: &ID){
+		use std::collections::Bound::Included;
+		let mut keys = vec![];
+
+		for (&k, _) in self.state.range(Included(id),Included(&max_id(id))){
+			//println!("delete: {:?}", k);
+			keys.push(k);
+		}
+		for k in keys.iter(){
+			self.state.remove(k);
+		}
+	}
+}
+
+impl Default for State{
+	fn default() -> State{
+		State{
+            focused: [0; 12],
+            hovered: [0; 12],
+            state: BTreeMap::new(),
+        }
+	}
+}
+
+fn max_id(id: &ID) -> ID{
+	let mut e: ID = [65535;12];
+	let mut i = 0;
+	for &v in id.iter(){
+		if v == 0{
+			break;
+		}
+		e[i] = v;
+		//println!("i:{}, v: {}",i,v);
+		i+=1;
+	};
+	e
+}
+#[test]
+fn test_max_id(){
+	assert_eq!(max_id(&[1,0,0,0,0,0,0,0,0,0,0,0]), [1,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535]);
+}
+
+#[test]
+fn test_state(){
+	let mut s = State::new();
+	{let t: &u8 = s.get(&[1;12]);}
+	{let t: &u8 = s.get(&[1,0,0,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,1,0,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,1,1,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,1,2,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,3,1,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,1,1,1,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,2,1,0,0,0,0,0,0,0,0,0]);}
+	{let t: &u8 = s.get(&[1,1,1,2,0,0,0,0,0,0,0,0]);}
+
+	assert_eq!(s.state.len(), 9);
+	s.remove(&[1,1,1,2,0,0,0,0,0,0,0,0]);
+	assert_eq!(s.state.len(), 8);
+	s.remove_c(&[1,1,0,0,0,0,0,0,0,0,0,0]);
+	assert_eq!(s.state.len(), 3);
+}
 
 /// An extension of `AnyRefExt` allowing unchecked downcasting of trait objects to `&T`.
 pub trait UncheckedAnyRefExt<'a> {
@@ -61,6 +164,8 @@ impl UncheckedBoxAny for Box<Any + 'static> {
     }
 }
 
+//TODO: make test for state
+/*
 #[test]
 fn test_state(){
     let mut w = Window::new("",10,10);
@@ -69,4 +174,4 @@ fn test_state(){
 
     w.set_state([1,1,2,1,1,1,1,1,4,0,0,0], Box::new(34u64));
     assert!(w.find_state([1,1,2,1,1,1,1,1,4,0,0,0]) == Some(&34u64));
-}
+}*/
