@@ -6,16 +6,21 @@ use SystemCursor;
 
 #[derive(Debug, Copy)]
 pub enum ButtonEvent{
-    Click,//click event on mouse down
-    Hover,//if mose move and mouse over button
+	/// click event on mouse down
+    Click,
+	/// double click event on mouse down
+    DoubleClick,
+	/// if mose move and mouse over button
+    Hover,
+	/// mouse goes away from button
     Leave
 }
 
 /// Usage:
-///	
+///
 /// ```
 /// use gui::components::Button;
-/// 
+///
 /// ctx.add(Button{
 /// 	text: "Button",
 /// 	..Default::default()
@@ -40,47 +45,6 @@ impl<'a> Default for Button<'a>{
     }
 }
 
-#[macro_export]
-macro_rules! widget{
-    ( $name:ident ( $( $atr_name:ident : $attr_type:ty),* ){
-        $( $prop_name:ident : $prop_type:ty = $prop_val:expr ),*
-    }) => (
-        pub struct $name{
-            $( $prop_name : $prop_type ,)*
-        }
-        impl $name{
-            pub fn new( $( $atr_name : $attr_type),* ) -> $name{
-                $name{
-                    $( $prop_name : $prop_val ),*
-                }
-            }
-            //TODO: implement setter
-        }
-    )
-}
-
-widget!(Box(width: f64, height: f64){
-    width: f64 = width,
-    height: f64 = height,
-    color: (f32, f32, f32) = (0.0,0.0,0.0)
-});
-
-macro_rules! setter{
-    (
-        $e:ty,
-        $( $prop:ident : $prop_type:ty ),+
-    ) => (
-        impl<'a> $e{
-            $(
-                pub fn $prop(&'a mut self, $prop: $prop_type) -> &'a mut $e{
-                    self.$prop = $prop;
-                    self
-                }
-            )+
-        }
-    )
-}
-
 setter!(Button<'a>,
     width: f64,
     height: f64,
@@ -89,6 +53,8 @@ setter!(Button<'a>,
 );
 
 impl<'a> Widget for Button<'a>{
+    type Event = ButtonEvent;
+
     fn render(&self, ctx: &mut Context) {
         let hover = ctx.focused();
 
