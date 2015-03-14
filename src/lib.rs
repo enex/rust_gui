@@ -5,34 +5,28 @@
 #![feature(box_syntax)]
 #![feature(core)]
 #![feature(libc)]
-#![feature(std_misc)]
-#![feature(plugin)]
-#![plugin(gfx_macros)]
 
 extern crate libc;
-//extern crate cairo;
 extern crate glutin;
-extern crate gfx;
-extern crate cgmath;
+extern crate nanovg;
+extern crate gl;
 
 pub use glutin::{Event, ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
-pub use window::Window;
 pub use context::Context;
-pub use id::ID;
-pub use draw2d::Paper;
-
-use cgmath::FixedArray;
-use cgmath::{Matrix, Point3, Vector3};
-use cgmath::{Transform, AffineMatrix3};
-use gfx::{Device, DeviceExt, ToSlice};
-use gfx::batch::RefBatch;
+pub use nanovg::{Ctx, Color, Font};
+use std::default::Default;
+use state::State;
 
 pub mod context;
+#[macro_use]
 pub mod components;
-mod id;
-mod window;
 mod state;
-pub mod draw2d;
+pub mod draw;
+
+#[macro_use]
+mod macros;
+
+pub type ID = [u16;12];
 
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
 //TODO: add android support
@@ -41,15 +35,19 @@ pub mod draw2d;
 /// A widget can eather have state, in which case it gets its own frame-buffer
 /// or it has no state in which case its result will be thrown away after changes.
 pub trait Widget{
-	///event type the widget returns
-	//type Event;
+	/// The state of this widget if the widget has no state, nothing has
+	/// to b done, the state type has to implement the default trait and
+	/// it will have the dafault value when accessed first.
 	type State = ();
+
+	/// the event the widget returns this is a enum most of the times
+	type Event = ();
 
 	/// In this function only rendering to the screen and atouching event listeners is done
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
 	/// able to change anything.
 	/// It returns the (width, hight) of the area affected by the render method
-	fn render(&self, ctx: &mut Context);
+	fn render(&self, ctx: &mut Context<Self::Event, Self::State>);
 
 	/// Method which is used by the layout engine to get the size of a component
 	/// by default the size will be calculated by using the render function with
@@ -58,95 +56,68 @@ pub trait Widget{
 	fn size(&self) -> (f64, f64) {
 		(0.0,0.0)
 	}
-}
-
-/// A trait which should be implemented by every Widget featuring child widgets
-/// like layout or Tabs or somthing like this.
-pub trait Children{
-	/// builder pattern like function which makes defining child nodes possible
-	fn children() -> Self;
+	
+	/// This function is called on every type of element visible one time
+	/// by default it does nothing
+	fn init(){
+		//do nothing
+	}
 }
 
 /// This has to be implemented by the root component of an application. This is
 /// the only component which holds its state by default and is able to mutade
 /// its propreties.
 pub trait App{
-	fn render(&mut self, ctx: &mut Context);
+	fn render<State>(&mut self, ctx: &mut Context<(),State>);
 	fn close(&mut self){}
 	fn start(&mut self){}
 }
 
-
-#[vertex_format]
-#[derive(Copy)]
-struct Vertex {
-    #[name = "a_Pos"]
-    pos: [f32; 2],
-
-    #[name = "a_Color"]
-    color: [f32; 4],
+/// evaluate the expression, then check for GL error.
+macro_rules! glcheck {
+	($e: expr) => (
+		{
+			$e;
+			assert_eq!(unsafe {gl::GetError()}, 0);
+		}
+	)
 }
 
-//The shaders, they are loaded from an external file
-static VERTEX_SRC: &'static [u8] = include_bytes!("vertex-shader.vert");
-static FRAGMENT_SRC: &'static [u8] = include_bytes!("fragment-shader.frag");
+/// make a new graphical interface and draw it
+pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<(),()>) {
+	let (mut width, mut height) = window.get_inner_size().unwrap();
 
-pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Paper) {
-	let (w, h) = window.get_inner_size().unwrap();
-	let mut frame = gfx::Frame::new(w as u16, h as u16);
-	
-	let mut device = gfx::GlDevice::new(|s| window.get_proc_address(s));
-	let mut renderer = device.create_renderer();
-	let mut context = gfx::batch::Context::new();
-	
-	let c = [0.5,0.5,1.,1.];
-	
-	let mut vertex_data = vec![
-        Vertex { pos: [ -0.7, -0.7 ], color: [1.0, 0.0, 0.8,1.] },
-        Vertex { pos: [  0.7, -0.7 ], color: [0.0, 1.0, 0.8,1.] },
-        Vertex { pos: [  0.0,  0.7 ], color: [0.0, 0.0, 1.0,1.] },
-        
-        Vertex { pos: [ -0.5, -0.5 ], color: [0.0, 1.0, 0.0, 0.1] },
-        Vertex { pos: [  0.5, -0.5 ], color: [0.0, 1.0, 0.0, 0.4] },
-        Vertex { pos: [  0.0,  0.5 ], color: [0.0, 1.0, 0.0, 0.4] },
-        
-		Vertex { pos: [ -0.2, -0.2 ], color: c },
-		Vertex { pos: [  0.2, -0.2 ], color: c },
-		Vertex { pos: [  0.2,  0.2 ], color: c },
-		Vertex { pos: [ -0.2, -0.2 ], color: c },
-		Vertex { pos: [  0.2, 0.2 ], color: c },
-		Vertex { pos: [  -0.2,  0.2 ], color: c },
-    ];
-    
-    let mesh = device.create_mesh(&vertex_data);
-    let slice = mesh.to_slice(gfx::PrimitiveType::TriangleList);
-
-    let program = device.link_program(VERTEX_SRC, FRAGMENT_SRC)
-                        .ok().expect("Failed to link program");
-
-    let mut renderer = device.create_renderer();
-
-    let clear_data = gfx::ClearData {
-        color: [0.3, 0.3, 0.3, 1.0],
-        depth: 1.0,
-        stencil: 0,
-    };
-    let state = gfx::DrawState::new();
-	
-	let mut paper = Paper::new();//TODO: initialize with gl context
-	
 	let mut zoom:f64 = 0.0;
-	let mut mouse_pos: (f32, f32) = (0., 0.);
+	let mut mouse_pos: (i32, i32) = (0, 0);
+
+	unsafe{
+		gl::load_with(|symbol| window.get_proc_address(symbol));
+		gl::ClearColor(0.1, 0.1, 0.1, 1.0);
+	}
+
+	let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
+	let mut redraw = true;
+
+	let mut state = State::new();//the application state
 	
-	//let context = load(&window);
+	let mut fonts: Vec<Font> = Vec::new(); 
+	{
+		fonts.push(vg.create_font("sans", "res/Roboto-Regular.ttf".as_slice()).unwrap());
+		fonts.push(vg.create_font("font-awesome", "res/fontawesome-webfont.ttf".as_slice()).unwrap());
+		fonts.push(vg.create_font("sans-bold", "res/Roboto-Bold.ttf".as_slice()).unwrap());
+	}
+	//TODO: handle resources better
 	while !window.is_closed() {
 		window.wait_events();
-		
+
 		for event in window.poll_events() {
+			use glutin::Event::*;
 			match event{
 				Event::Resized(w, h) => {//handle resizes
-					frame.width = w as u16;
-					frame.height = h as u16;
+					println!("({},{})",w,h);
+					width = w;
+					height = h;
+					redraw = true;
 				},
 				Event::MouseWheel(v) => {
 					//TODO: zoom in and out
@@ -154,36 +125,32 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Paper) {
 					println!("Zoom level: {}", zoom);
 				},
 				Event::MouseMoved(p) => {
-					mouse_pos = (
-						(p.0 as f32 / frame.width as f32)*2. -1.,
-						-(p.1 as f32 / frame.height as f32)*2. +1.
-					);
+					mouse_pos = p;
 				},
 				Event::MouseInput(glutin::ElementState::Pressed, _) => {
 					let x = mouse_pos.0;
 					let y = mouse_pos.1;
-					vertex_data.push(Vertex { pos: [ x-0.1 , y-0.1 ], color: c });
-					vertex_data.push(Vertex { pos: [ x-0.1, y+0.1 ], color: c });
-					vertex_data.push(Vertex { pos: [ x, y ], color: c });
 					println!("new data at ({}, {})", x, y);
 				},
 				_ => ()
 			}
 			println!("{:?}", event);
 		}
-		
-		renderer.reset();
-		renderer.clear(clear_data, gfx::COLOR, &frame);
-		
-		let mesh = device.create_mesh(&vertex_data);
-		let slice = mesh.to_slice(gfx::PrimitiveType::TriangleList);
-		
-		renderer.draw(&(&mesh, slice, &program, &(), &state), &frame).unwrap();
-		device.submit(renderer.as_buffer());
-		
-		(draw)(&mut paper);
-		//TODO: make drawing here
-		
-		window.swap_buffers();
+
+		if redraw{
+			vg.begin_frame(width as i32, height as i32, 1.);
+
+			{
+				let mut c: Context<(),()> = Context::new(&mut vg, &state);
+				(draw)(&mut c);
+			}
+			//TODO: make drawing here
+
+			vg.end_frame();
+			window.swap_buffers();
+
+			redraw = false;
+		}
 	}
+	println!("res: {:?}", fonts);
 }
