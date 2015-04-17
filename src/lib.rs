@@ -1,8 +1,11 @@
 #![crate_name = "rui"]
-#![unstable]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 #![feature(box_syntax, core, libc, collections)]
+
+/*!
+[repository](https://github.com/enex/rust_gui)
+*/
 
 extern crate libc;
 extern crate glutin;
@@ -17,29 +20,35 @@ use std::default::Default;
 pub mod context;
 #[macro_use]
 pub mod components;
-mod state;
 pub mod draw;
 pub mod primitives;
 pub mod cairo_backend;
 pub mod debug;
+mod state;
 
 #[macro_use]
 mod macros;
 
 pub type ID = [u16;12];
 
+//TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
-//TODO: add android support
 
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Color{
 	r: f32,
 	g: f32,
-	b: f32
+	b: f32,
+	a: f32,
 }
 impl Color{
 	fn rgb(r: u8, g: u8, b: u8) -> Color{
-		Default::default()
+		Color{
+			r:((r as f32)/255.),
+			g:((g as f32)/255.),
+			b:((b as f32)/255.),
+			..Default::default()
+		}
 	}
 }
 
@@ -51,20 +60,48 @@ pub trait Backend{
 	/// should happen
 	fn load_font(&mut self, &str);
 
-	//drawing primitives
-	fn draw_line(&mut self, primitives::Line);
-	fn draw_rect(&mut self, rect: primitives::Rect){
-		self.draw_line(primitives::Line{
-			x1: rect.x,
-			y1: rect.y,
-			x2: rect.x,
-			y2: rect.y + rect.height,
-		});
-		//TODO: draw the other lines or draw polygon
-	}
-	fn draw_circle(&mut self, primitives::Circle);
 	fn draw_path(&mut self, primitives::Path);
-	fn draw_polygon(&mut self, primitives::Polygon);
+
+	//drawing primitives
+	fn draw_line(&mut self, line: primitives::Line){
+		let mut p = primitives::Path::new();
+
+		p.move_to(line.x1, line.y1);
+		p.line_to(line.x2, line.y2);
+
+		self.draw_path(p);
+	}
+	fn draw_rect(&mut self, rect: primitives::Rect){
+		let mut p = primitives::Path::new();
+
+		p.move_to(rect.x, rect.y);
+		p.line_to(rect.x + rect.width, rect.y);
+		p.line_to(rect.x + rect.width, rect.y + rect.height);
+		p.line_to(rect.x, rect.y + rect.height);
+		p.line_to(rect.x, rect.y);
+
+		self.draw_path(p);
+	}
+	fn draw_circle(&mut self, primitives::Circle){
+		//TODO: implement it with draw_path
+		unimplemented!()
+	}
+	fn draw_polygon(&mut self, pg: primitives::Polygon){
+		let mut p = primitives::Path::new();
+		let mut first = true;
+
+		for c in pg.cords.iter(){
+			if first{
+				p.move_to(c.0, c.1);
+				first = false;
+			}else{
+				p.line_to(c.0, c.1);
+			}
+		}
+
+		p.close_path();
+		self.draw_path(p);
+	}
 }
 
 /// the trait implemented by all widgets displayed.
@@ -119,18 +156,26 @@ macro_rules! glcheck {
 
 /// make a new graphical interface and draw it
 pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<(),()>) {
-	let (mut width, mut height) = window.get_inner_size().unwrap();
+	let (width, height) = window.get_inner_size().unwrap();
+	let (mut width, mut height) = (width as i32, height as i32);
 
 	let mut mouse_pos: (i32, i32) = (0, 0);
 
-	unsafe{
-		gl::load_with(|symbol| window.get_proc_address(symbol));
-		gl::ClearColor(0.1, 0.1, 0.1, 1.0);
-	}
+	gl::load_with(|symbol| window.get_proc_address(symbol));
 
 	let mut redraw = true;
 
 	let mut state = State::new();//the application state
+
+	// create a cairo surface, this is mutable bacause it has to be resized when the
+	// window size changes
+	let mut surface = cairo::surface::Surface::create_similar_image(
+		cairo::surface::format::Format::ARGB32,
+		width,
+		height,
+	);
+	assert_eq!(surface.status(), cairo::Status::Success);
+	let mut ctx = cairo::Cairo::create(&mut surface);
 
 	while !window.is_closed() {
 		window.wait_events();
@@ -139,9 +184,9 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 			use glutin::Event::*;
 			match event{
 				Event::Resized(w, h) => {//handle resizes
-					println!("({},{})",w,h);
-					width = w;
-					height = h;
+					println!("({},{})", w, h);
+					width = w as i32;
+					height = h as i32;
 					redraw = true;
 				},
 				Event::MouseMoved(p) => {
@@ -158,10 +203,22 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 		}
 
 		if redraw{
-			//TODO: do draw here
+			//render cairo
+			ctx.save();
+			ctx.set_source_rgba(0.0,0.0,0.25,1.0);
+			ctx.paint();
 
+			ctx.move_to(0.0,0.0);
+			ctx.line_to(0.5, 0.1);
+
+			unsafe{
+				
+			}
 			println!("draw ({}, {})", width, height);
 			redraw = false;
+			window.swap_buffers();
 		}
 	}
+
+	//TODO: clear resources before exiting
 }

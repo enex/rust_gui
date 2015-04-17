@@ -8,6 +8,7 @@ pub use draw::Path;
 //TODO: add stoke and fill somehow
 //TODO: zero copy and zero alloc
 //TODO: use lazy statics to store paths that would otherwise go away and prevent allocation on new creation
+//TODO: consider removing Polyline, Polygon, Circle, Line and just use Path
 
 #[derive(Clone, Debug)]
 pub struct Circle{
@@ -43,7 +44,7 @@ pub struct Image{
 
 #[derive(Clone, Debug)]
 pub struct Polygon{
-    pub cords: Vec<(f64,f64)>,
+    pub cords: Vec<(f64, f64)>,
 }
 
 #[derive(Clone, Debug)]
