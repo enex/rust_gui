@@ -19,6 +19,8 @@ pub mod context;
 pub mod components;
 mod state;
 pub mod draw;
+pub mod primitives;
+pub mod cairo_backend;
 
 #[macro_use]
 mod macros;
@@ -38,6 +40,30 @@ impl Color{
 	fn rgb(r: u8, g: u8, b: u8) -> Color{
 		Default::default()
 	}
+}
+
+/// Backend which should be implemented to support drawing operations
+/// the first backend will be cairo + OpenGL but other backends should follow
+pub trait Backend{
+	/// load a font form a given path and make it available for later use
+	/// if it is called with the same font more than one time nothing
+	/// should happen
+	fn load_font(&mut self, &str);
+
+	//drawing primitives
+	fn draw_line(&mut self, primitives::Line);
+	fn draw_rect(&mut self, rect: primitives::Rect){
+		self.draw_line(primitives::Line{
+			x1: rect.x,
+			y1: rect.y,
+			x2: rect.x,
+			y2: rect.y + rect.height,
+		});
+		//TODO: draw the other lines or draw polygon
+	}
+	fn draw_circle(&mut self, primitives::Circle);
+	fn draw_path(&mut self, primitives::Path);
+	fn draw_polygon(&mut self, primitives::Polygon);
 }
 
 /// the trait implemented by all widgets displayed.
@@ -68,9 +94,7 @@ pub trait Widget{
 
 	/// This function is called on every type of element visible one time
 	/// by default it does nothing
-	fn init(){
-		//do nothing
-	}
+	fn init(){}
 }
 
 /// This has to be implemented by the root component of an application. This is

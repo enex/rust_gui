@@ -57,6 +57,7 @@ pub enum PathInstr{
 }
 
 /// a structure containing all data for a path
+#[derive(Clone, Debug)]
 pub struct Path{
 	instr: Vec<PathInstr>,
 	vals: Vec<f32>,

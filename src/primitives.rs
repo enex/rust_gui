@@ -3,66 +3,65 @@ Primitives to draw everything needed backend independent and all in the same
 consistent way
 */
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub use draw::Path;
+
+//TODO: zero copy and zero alloc
+//TODO: use lazy statics to store paths that would otherwise go away and prevent allocation on new creation
+
+#[derive(Clone, Debug)]
 pub struct Circle{
-    pub r: f32,
-    pub cx: f32,
-    pub cy: f32,
+    pub r: f64,
+    pub cx: f64,
+    pub cy: f64,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Ellipse{
-    pub rx: f32,
-    pub ry: f32,
-    pub cx: f32,
-    pub cy: f32,
+    pub rx: f64,
+    pub ry: f64,
+    pub cx: f64,
+    pub cy: f64,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Line{
-    pub x1: f32,
-    pub y1: f32,
-    pub x2: f32,
-    pub y2: f32,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Image{
-    pub x: f32,
-    pub y: f32,
-    pub height: f32,
-    pub width: f32,
+    pub x: f64,
+    pub y: f64,
+    pub height: f64,
+    pub width: f64,
     //TODO: add the data
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Path{
-    pub cords: Vec<f32>,
-    pub ops:   Vec<()>,//TODO: fully implement this
-}
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Polygon{
-    pub cords: Vec<(f32,f32)>,
+    pub cords: Vec<(f64,f64)>,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Polyline{
-    pub cords: Vec<(f32,f32)>,
+    pub cords: Vec<(f64,f64)>,
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Debug)]
 pub struct Rect{
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
     //maybe also implement rounden corners
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub struct Text{
-    pub x: f32,
-    pub y: f32,
-    pub text: String,
+#[derive(Clone, Debug)]
+pub struct Text<'a>{
+    pub x: f64,
+    pub y: f64,
+    pub text: &'a str,
 }
