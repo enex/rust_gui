@@ -1,11 +1,7 @@
 use Widget;
-use Event;
 use ID;
-use std::any::Any;
-use std::collections::HashMap;
 use glutin;
-use nanovg;
-use Ctx;
+use std::any::Any;
 use state::State as AppState;
 use std::marker::PhantomData;
 use std::default::Default;
@@ -13,9 +9,6 @@ use std::default::Default;
 pub struct Context<'a, Event, State>{
 	depth: u8,
 	id: ID,
-	//x: f32,
-	//y: f32,
-	ctx: &'a mut Ctx,
 	state: &'a AppState,
 
 	e: PhantomData<Event>,
@@ -23,29 +16,18 @@ pub struct Context<'a, Event, State>{
 }
 
 impl<'a, Event, State> Context<'a, Event, State>{
-	pub fn new(ctx: &'a mut Ctx, state: &'a AppState) -> Context<'a, Event, State>{
+	pub fn new(/*ctx: &'a mut Ctx,*/ state: &'a AppState) -> Context<'a, Event, State>{
 		Context{
 			depth: 0,
 			id: [0; 12],
-			//x: 0.,
-			//y: 0.,
-			ctx: ctx,
 			state: state,
 			e: PhantomData,
 			s: PhantomData
 		}
 	}
 
-	/// this function allows accessing the drawing context directly
-	/// by default it does nothing
-	pub fn draw<F>(&mut self, draw: F) where F: Fn(&mut Ctx) {
-		(draw)(self.ctx)
-	}
-
-
 	/// Add a new component.
 	/// The id has to be unique in this component
-	#[inline(always)]
 	pub fn add<W,E,S>(&mut self, id: u16, widget: &W) where W:Widget<Event=E,State=S>{
 		let mut nid = self.id;
 		nid[self.depth as usize] = id;
@@ -53,7 +35,7 @@ impl<'a, Event, State> Context<'a, Event, State>{
 		let mut c:Context<E,S> = Context{
 			id: nid,
 			depth: self.depth+1,
-			ctx: self.ctx,
+			//ctx: self.ctx,
 			state: self.state,
 			e: PhantomData,
 			s: PhantomData
@@ -65,7 +47,6 @@ impl<'a, Event, State> Context<'a, Event, State>{
 	}
 
 	/*/// add element at a given position
-	#[inline(always)]
 	pub fn add_at<E,S>(&mut self, id: u16, widget: &Widget<Event=E,State=S>, x: f32, y: f32) {
 		println!("add_at x:{} y:{}",x,y);
 		self.add(id, widget)
@@ -73,7 +54,6 @@ impl<'a, Event, State> Context<'a, Event, State>{
 
 	/// the id of the current component
 	#[stable]
-	#[inline(always)]
 	pub fn id(&self) -> ID{
 		self.id
 	}
@@ -113,6 +93,14 @@ impl<'a, Event, State> Context<'a, Event, State>{
 		})*/
 	}
 
+	/// returns the default for every widget. This is also the way how
+	/// theming is implemented. If the style sais this should have some
+	/// specific parameters, then these are returned as a default.
+	/// but theming is not jet implemented
+	pub fn default<D:Default>(&self) -> D{
+		Default::default()
+	}
+
 	/// get the current position
 	pub fn pos(&mut self) -> (f64, f64){
 		let x = 0.;
@@ -132,7 +120,8 @@ pub struct EventHandle<'a, Event, State>{
 	s: PhantomData<State>,
 }
 
-impl<'a, Event, State:'a> EventHandle<'a, Event, State> where State: Default + 'static{
+impl<'a, Event, State:'a> EventHandle<'a, Event, State>
+		where State: Any + Default + 'static{
 	pub fn new(id: &'a ID, state: &'a mut AppState) -> EventHandle<'a, Event, State>{
 		EventHandle{
 			id: id,

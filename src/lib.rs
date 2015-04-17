@@ -2,20 +2,17 @@
 #![unstable]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
-#![feature(box_syntax)]
-#![feature(core)]
-#![feature(libc)]
+#![feature(box_syntax, core, libc, collections)]
 
 extern crate libc;
 extern crate glutin;
-extern crate nanovg;
+extern crate cairo;
 extern crate gl;
 
 pub use glutin::{Event, ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::Context;
-pub use nanovg::{Ctx, Color, Font};
-use std::default::Default;
 use state::State;
+use std::default::Default;
 
 pub mod context;
 #[macro_use]
@@ -30,6 +27,18 @@ pub type ID = [u16;12];
 
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
 //TODO: add android support
+
+#[derive(Debug, Copy, Clone, Default)]
+pub struct Color{
+	r: f32,
+	g: f32,
+	b: f32
+}
+impl Color{
+	fn rgb(r: u8, g: u8, b: u8) -> Color{
+		Default::default()
+	}
+}
 
 /// the trait implemented by all widgets displayed.
 /// A widget can eather have state, in which case it gets its own frame-buffer
@@ -56,7 +65,7 @@ pub trait Widget{
 	fn size(&self) -> (f64, f64) {
 		(0.0,0.0)
 	}
-	
+
 	/// This function is called on every type of element visible one time
 	/// by default it does nothing
 	fn init(){
@@ -87,7 +96,6 @@ macro_rules! glcheck {
 pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<(),()>) {
 	let (mut width, mut height) = window.get_inner_size().unwrap();
 
-	let mut zoom:f64 = 0.0;
 	let mut mouse_pos: (i32, i32) = (0, 0);
 
 	unsafe{
@@ -95,18 +103,10 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 		gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 	}
 
-	let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
 	let mut redraw = true;
 
 	let mut state = State::new();//the application state
-	
-	let mut fonts: Vec<Font> = Vec::new(); 
-	{
-		fonts.push(vg.create_font("sans", "res/Roboto-Regular.ttf".as_slice()).unwrap());
-		fonts.push(vg.create_font("font-awesome", "res/fontawesome-webfont.ttf".as_slice()).unwrap());
-		fonts.push(vg.create_font("sans-bold", "res/Roboto-Bold.ttf".as_slice()).unwrap());
-	}
-	//TODO: handle resources better
+
 	while !window.is_closed() {
 		window.wait_events();
 
@@ -118,11 +118,6 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 					width = w;
 					height = h;
 					redraw = true;
-				},
-				Event::MouseWheel(v) => {
-					//TODO: zoom in and out
-					zoom += (v as f64);
-					println!("Zoom level: {}", zoom);
 				},
 				Event::MouseMoved(p) => {
 					mouse_pos = p;
@@ -138,19 +133,10 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 		}
 
 		if redraw{
-			vg.begin_frame(width as i32, height as i32, 1.);
+			//TODO: do draw here
 
-			{
-				let mut c: Context<(),()> = Context::new(&mut vg, &state);
-				(draw)(&mut c);
-			}
-			//TODO: make drawing here
-
-			vg.end_frame();
-			window.swap_buffers();
-
+			println!("draw ({}, {})", width, height);
 			redraw = false;
 		}
 	}
-	println!("res: {:?}", fonts);
 }

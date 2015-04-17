@@ -1,11 +1,9 @@
-use std::mem::forget;
-use std::mem::transmute;
+use ID;
+use std::mem::{forget, transmute};
 use std::raw::TraitObject;
 use std::any::Any;
-use std::collections::{BTreeMap, HashSet};
-use ID;
 use std::default::Default;
-use std::collections::btree_map::Range;
+use std::collections::BTreeMap;
 
 /// this struct is responsible for managing all the state of the gui
 #[derive(Debug)]
@@ -22,7 +20,7 @@ impl State{
     }
 	/// get a mutable reference to a component state
 	/// if state is not already set, it will be inserted and the default will be returned
-	pub fn get_mut<T>(&mut self, id: &ID) -> &mut T where T: Default + 'static{
+	pub fn get_mut<T>(&mut self, id: &ID) -> &mut T where T: Any + Default + 'static{
 		if !self.state.contains_key(id){
 			let d: Box<T> = Box::new(Default::default());
 			self.state.insert(*id, d);
@@ -32,7 +30,7 @@ impl State{
 
 	/// get a immutable ref to the state of the component, if the state is not jet set
 	/// the default value will be returned
-	pub fn get<T>(&mut self, id: &ID) -> &T where T: Default + 'static{
+	pub fn get<T>(&mut self, id: &ID) -> &T where T: Any + Default + 'static{
 		if !self.state.contains_key(id){
 			let d: Box<T> = Box::new(Default::default());
 			self.state.insert(*id, d);
@@ -90,15 +88,15 @@ fn test_max_id(){
 #[test]
 fn test_state(){
 	let mut s = State::new();
-	{let t: &u8 = s.get(&[1;12]);}
-	{let t: &u8 = s.get(&[1,0,0,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,1,0,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,1,1,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,1,2,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,3,1,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,1,1,1,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,2,1,0,0,0,0,0,0,0,0,0]);}
-	{let t: &u8 = s.get(&[1,1,1,2,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1;12]);                   }
+	{let _: &u8 = s.get(&[1,0,0,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,1,0,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,1,1,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,1,2,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,3,1,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,1,1,1,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,2,1,0,0,0,0,0,0,0,0,0]);}
+	{let _: &u8 = s.get(&[1,1,1,2,0,0,0,0,0,0,0,0]);}
 
 	assert_eq!(s.state.len(), 9);
 	s.remove(&[1,1,1,2,0,0,0,0,0,0,0,0]);

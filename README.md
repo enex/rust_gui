@@ -12,6 +12,53 @@ nanovg will be used instead of cairo which I used at first to test my idee, beca
 it is more lightweight and i need opengl anyway for other reasons, furthermore
 most of cairos functions aren't needed.
 
+Everything should be abstracted into the widget api including all drawing-operations.
+This allows to switch the backend without changing the api. Aditionaly it simplifyes
+the usage of the api because there are only some widgets you should know about and
+not more.
+Events should be hendled as discussed earlier, for convinience the api could be constructed
+in a way that every event that will propagate up to the top level has only one event type,
+this way mapping is much simpler
+
+
+## Macros
+[...]                container for child nodes
+{...}                indicates some code for this context
+|$event:ident|{...}  some event handling code
+$name:ident(...)     a new widget
+```rust
+data!(
+	Group[
+		Path("M12,54L4,4L34,100"),
+		Button(text="Hallo")|event|{
+			//handle the events here
+			//
+		}//==Button("Hallo")
+	]
+);
+widget! Button(
+	(
+		text: &str = "",
+		icon: Option<Icon> = None,
+	){
+		Path(...)
+	}
+);
+```
+
+```
+Button{
+	x: 10
+	y: 100
+	text: "test"
+
+	Name{
+		x: 100
+		y: 10
+		text: "wer auch immer"
+	}
+}
+```
 ## TODO:
  - make component system work
  - build some basic components

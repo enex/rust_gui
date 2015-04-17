@@ -2,7 +2,7 @@ use Widget;
 use Context;
 use Color;
 use std::default::Default;
-use nanovg::{LEFT,RIGHT,TOP,BOTTOM,MIDDLE, Font, Image, Ctx};
+//use nanovg::{LEFT,RIGHT,TOP,BOTTOM,MIDDLE, Font, Image, Ctx};
 
 #[derive(Clone)]
 pub struct Icon{
@@ -34,7 +34,7 @@ impl Widget for Icon{
 	type State = ();
 
 	fn render(&self, ctx: &mut Context<(),()>) {
-		ctx.draw(|vg|{
+		/*ctx.draw(|vg|{
             vg.font_size(self.size);
             vg.font_face("font-awesome");
             vg.fill_color(self.color);
@@ -43,7 +43,8 @@ impl Widget for Icon{
 			let mut s = String::new();
 			s.push(self.icon);
 			vg.text(500.,500.,&s[0..]);
-        });
+        });*/
+		//TODO: do the drawing here
 	}
 	fn init(){
 		//TODO: load the font

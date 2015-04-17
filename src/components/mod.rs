@@ -21,7 +21,7 @@ macro_rules! setter{
 
 //pub use self::button::{Button, ButtonEvent};
 
-pub use self::label::Label;
+//pub use self::label::Label;
 
 //pub use self::image::Icon;
 //pub use self::slider::{Slider, SliderEvent};
@@ -39,6 +39,6 @@ pub use self::icon::fa;
 //pub mod layout;
 //#[macro_use]
 //pub mod button;
-pub mod label;
+//pub mod label;
 
 pub mod icon;
