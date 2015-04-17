@@ -10,10 +10,14 @@ not more.
 
 ## Macros
 **this is not jet implemented and might change**
-[...]                container for child nodes
-{...}                indicates some code for this context
-|$event:ident|{...}  some event handling code
-$name:ident(...)     a new widget
+
+| pattern             | description                          |
+|---------------------|--------------------------------------|
+| [...]               | container for child nodes            |
+| {...}               | indicates some code for this context |
+| |$event:ident|{...} | some event handling code             |
+| $name:ident(...)    | a new widget                         |
+
 ```rust
 data!(
 	Group[
