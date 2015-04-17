@@ -38,7 +38,7 @@ widget! Button(
 );
 ```
 
-```
+```qml
 Button{
 	x: 10
 	y: 100
