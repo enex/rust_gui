@@ -5,6 +5,7 @@ consistent way
 
 pub use draw::Path;
 
+//TODO: add stoke and fill somehow
 //TODO: zero copy and zero alloc
 //TODO: use lazy statics to store paths that would otherwise go away and prevent allocation on new creation
 

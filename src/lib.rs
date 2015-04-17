@@ -21,6 +21,7 @@ mod state;
 pub mod draw;
 pub mod primitives;
 pub mod cairo_backend;
+pub mod debug;
 
 #[macro_use]
 mod macros;

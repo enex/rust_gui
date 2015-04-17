@@ -14,7 +14,7 @@ impl Backend for DebugBackend{
         println!("load_font({:?})", path);
     }
     fn draw_line(&mut self, line: primitives::Line){
-        println!("draw_line({:?})", path);
+        println!("draw_line({:?})", line);
     }
     fn draw_rect(&mut self, rect: primitives::Rect){
 		println!("draw_rect({:?})", rect);
