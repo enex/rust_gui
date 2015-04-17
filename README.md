@@ -1,27 +1,15 @@
 # GUI for Rust
 
-https://github.com/reem/rust-typemap
-
 Little an simple gui library for rust inspired by react.
-gui and uses nanovg as backend library for rendering.
-
-https://github.com/TomBebbington/glutin should be used as glue to generate the
-opengl context, but it seems not jet ready so sdl2 is used.
-
-nanovg will be used instead of cairo which I used at first to test my idee, because
-it is more lightweight and i need opengl anyway for other reasons, furthermore
-most of cairos functions aren't needed.
+gui and uses cairo as default backend library for rendering.
 
 Everything should be abstracted into the widget api including all drawing-operations.
 This allows to switch the backend without changing the api. Aditionaly it simplifyes
 the usage of the api because there are only some widgets you should know about and
 not more.
-Events should be hendled as discussed earlier, for convinience the api could be constructed
-in a way that every event that will propagate up to the top level has only one event type,
-this way mapping is much simpler
-
 
 ## Macros
+**this is not jet implemented and might change**
 [...]                container for child nodes
 {...}                indicates some code for this context
 |$event:ident|{...}  some event handling code
@@ -82,3 +70,7 @@ Button{
 ## Screenshots
 
 ![all_widgets example](./screenshot_all_widgets.png)
+
+## Links
+https://github.com/reem/rust-typemap
+https://github.com/TomBebbington/glutin
