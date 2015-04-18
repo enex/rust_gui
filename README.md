@@ -1,12 +1,13 @@
 # GUI for Rust
 
 Little an simple gui library for [Rust] inspired by react.
-gui and uses nanovg as default backend library for rendering.
+gui and uses (nanovg)[https://github.com/enex/nanovg-rs] as default backend library for rendering.
 
 Everything should be abstracted into the widget api including all drawing-operations.
 This allows to switch the backend without changing the api. Aditionaly it simplifyes
 the usage of the api because there are only some widgets you should know about and
 not more.
+
 
 ## Macros
 **this is not jet implemented and might change**
@@ -51,6 +52,19 @@ Button{
 	}
 }
 ```
+idee with animation
+```rust
+let animated = Animation::new(component, |c, x|{
+	c.x = x;
+	c.y = y;
+}, Linear);
+
+c.add(1, animated);
+```
+this means to just use a wrapper component which takes the component which
+should be animated and manages the state of the animation. on every tick
+event it calls the clusure modifying the component with the current paramer.
+
 ## TODO:
  - make component system work
  - build some basic components
