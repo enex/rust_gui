@@ -1,6 +1,6 @@
 # GUI for Rust
 
-Little an simple gui library for [Rust] inspired by react.
+Little an simple gui library for (Rust)[http://www.rust-lang.org/] inspired by react.
 gui and uses (nanovg)[https://github.com/enex/nanovg-rs] as default backend library for rendering.
 
 Everything should be abstracted into the widget api including all drawing-operations.
@@ -52,7 +52,7 @@ Button{
 	}
 }
 ```
-idee with animation
+idea with animation
 ```rust
 let animated = Animation::new(component, |c, x|{
 	c.x = x;
