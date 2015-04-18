@@ -6,138 +6,136 @@ use std::any::Any;
 use state::State as AppState;
 use std::marker::PhantomData;
 use std::default::Default;
+use Backend;
+
+#[derive(Clone, Debug, Default, Copy)]
+pub struct Pos{
+	x: f32,
+	y: f32,
+}
 
 /// trait to register events
 pub trait EventRegister{
-	fn on_hover<F: Fn()>(&mut self, f: F){}
+	type Event;
+	type State: Default;
 
 	/// register event listener for click event
-	fn on_click(&mut self){}
+	fn on_click<F:Fn(Pos, &mut EventHandle<Self::Event, Self::State>)>(&mut self, f: F){}
 
 	/// register event listener for key event
 	fn on_key(&mut self){}
 }
 
 pub trait Context: EventRegister{
-	fn add(){}
-	fn with_event();
+	/// add a component
+	fn add<W:Widget<State=S,Event=E>,S:Any+Default,E>(&mut self, id: u16, _: W){
+
+	}
+	/// add a component with coresponing position
+	fn with_event(&mut self){}
+	/// draw a path
 	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
 			(&mut self, _: draw::Path<I,V>){}
-	fn state();
 
-	//event listening
+	/// get the current state
+	fn state(&mut self) -> &Self::State;
+
+	/// returns true if the element is currently focused, if not it returns false
+	fn focused(&self) -> bool;
+
+	/// wether the element is hovered at the moment
+	fn hovered(&self) -> bool;
+
+	/// the id of the current component
+	fn id(&self) -> ID;
+
+	/// returns the default for every widget. This is also the way how
+	/// theming is implemented. If the style sais this should have some
+	/// specific parameters, then these are returned as a default.
+	/// but theming is not jet implemented
+	fn default<D:Default>(&self) -> D{
+		Default::default()
+	}
 }
 
-/*pub struct Context<'a, Event, State>{
+/// context used to draw everything on screen
+/// this will be passed to a component if this component should be drawn
+
+//TODO: simplify
+pub struct DrawContext<'a, D, Event, State> where D:'a{
 	/// how deep is the component this context belongs to
 	depth: u8,
 	/// id of the component the context belongs to
 	id: ID,
 	/// the application state
 	state: &'a mut AppState,
+	be: &'a mut D,
 
-	//PhantomData for Event and State to make it compile
 	e: PhantomData<Event>,
 	s: PhantomData<State>,
 }
 
-impl<'a, Event, State> Context<'a, Event, State>{
-	pub fn new(state: &'a mut AppState) -> Context<'a, Event, State>{
-		Context{
+impl<'a, D:Backend, Event, State> DrawContext<'a, D, Event, State>{
+	pub fn new(be: &'a mut D, state: &'a mut AppState) -> DrawContext<'a, D, Event, State>{
+		DrawContext{
 			depth: 0,
 			id: [0; 12],
 			state: state,
+			be: be,
+
 			e: PhantomData,
 			s: PhantomData
 		}
 	}
+}
 
-	/// Add a new component.
-	/// The id has to be unique in this component
-	pub fn add<W,E,S>(&mut self, id: u16, widget: &W) where W:Widget<Event=E,State=S>{
+impl<'a, D:Backend, Event, State:Default>EventRegister for DrawContext<'a, D, Event, State>{
+	type Event = Event;
+	type State = State;
+}
+
+impl<'a, D:Backend, Event, State:Any+Default>Context for DrawContext<'a, D, Event, State>{
+	fn state(&mut self) -> &State{
+		self.state.get(&self.id)
+	}
+	fn id(&self) -> ID{
+		self.id
+	}
+	fn focused(&self) -> bool{
+		self.state.focused == self.id
+	}
+	fn hovered(&self) -> bool{
+		self.state.hovered == self.id
+	}
+	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
+			(&mut self, path: draw::Path<I,V>){
+		self.be.draw_path(path);
+	}
+
+	fn add<W:Widget<State=S,Event=E>,S:Any+Default,E>(&mut self, id: u16, w: W){
 		let mut nid = self.id;
 		nid[self.depth as usize] = id;
 
-		let mut c:Context<E,S> = Context{
+		println!("add: {:?} as {:?}", W::name(), nid);
+
+		let mut c:DrawContext<D, E, S> = DrawContext{
 			id: nid,
 			depth: self.depth + 1,
 			state: self.state,
+			be: self.be,
 			e: PhantomData,
 			s: PhantomData
 		};
 		if c.depth > 11{
 			panic!("the structure is to deep only a 12 child deep tree is allowed");
 		}
-		widget.render(&mut c);
+
+		w.render(&mut c)
 	}
-
-	/*/// add element at a given position
-	pub fn add_at<E,S>(&mut self, id: u16, widget: &Widget<Event=E,State=S>, x: f32, y: f32) {
-		println!("add_at x:{} y:{}",x,y);
-		self.add(id, widget)
-	}*/
-
-	/// the id of the current component
-	pub fn id(&self) -> ID{
-		self.id
-	}
-
-	/// returns true if the element is currently focused, if not it returns false
-	pub fn focused(&self) -> bool{
-		self.state.focused == self.id
-	}
-
-	/// wether the element is hovered at the moment
-	pub fn hovered(&self) -> bool{
-		self.state.hovered == self.id
-	}
-
-
-	/// get the state of the current component, if it has not been set by
-	/// an event it has the default value.
-	pub fn state(&self) -> &State{
-		use state::UncheckedAnyRefExt;
-		unimplemented!();
-		/*self.state.state.get(&self.id).map(|any|{
-			unsafe{ (*any).downcast_ref_unchecked::<State>()}
-		})*/
-	}
-
-	/// returns the default for every widget. This is also the way how
-	/// theming is implemented. If the style sais this should have some
-	/// specific parameters, then these are returned as a default.
-	/// but theming is not jet implemented
-	pub fn default<D:Default>(&self) -> D{
-		Default::default()
-	}
-
-	/// get the current position
-	pub fn pos(&mut self) -> (f64, f64){
-		let x = 0.;
-		let y = 0.;
-
-		(x, y)
-	}
-	pub fn pos_x(&mut self) -> f64{let (x,_) = self.pos(); x}
-	pub fn pos_y(&mut self) -> f64{let (_,y) = self.pos(); y}
 }
 
-/// event handling, closures can be registered to listen for certain events
-/// they are called if this event happens. It is not possible to modify
-/// a property in the closure, you can just modify the element state
-/// and you can throw a event which is propagated to the parent element
-impl <'a, Event, State> Context<'a, Event, State>{
-	/// register event listener for hover event
-	pub fn on_hover<F: Fn()>(&mut self, f: F){}
-
-	/// register event listener for click event
-	pub fn on_click(&mut self){}
-
-	/// register event listener for key event
-	pub fn on_key(&mut self){}
-}
-
-
+/// this struct is used to handle events. Every registered event handler will
+/// get a instance of this struct. This way it can for example propagate
 pub struct EventHandle<'a, Event, State>{
 	id: &'a ID,
 	state: &'a mut AppState,
@@ -156,18 +154,21 @@ impl<'a, Event, State:'a> EventHandle<'a, Event, State>
 		}
 	}
 
-	//TODO: make shure the type of state is correct and use the information given
+	//TODO: make sure the type of state is correct and use the information given
 
 	/// get the state of the component immutable
 	pub fn state(&'a mut self) -> &'a State {
 		self.state.get(&self.id)
 	}
-	/// get mutable reference to state of the widget
+
+	/// get mutable reference to state of the widget this marks the widget as
+	/// dirty and it will be rerendered.
 	pub fn mut_state(&'a mut self) -> &'a mut State {
 		self.state.get_mut(&self.id)
 	}
 
-	/// emit an event for parent widgets
+	/// emit an event for parent widgets this event can then be catched by the
+	/// parent and can be used to set the state of the widget or to propagate further
 	pub fn emit(&mut self, e: Event){
 		unimplemented!();
 	}
@@ -188,4 +189,4 @@ impl<'a, Event, State:'a> EventHandle<'a, Event, State>
 		unimplemented!();
 		//TODO: make this work somehow
 	}
-}*/
+}

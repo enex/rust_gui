@@ -1,4 +1,4 @@
-extern crate rui;
+#[macro_use] extern crate rui;
 extern crate glutin;
 
 use rui::prelude::*;
@@ -13,9 +13,13 @@ fn main(){
 	unsafe { window.make_current() };//make it active
 
 	rui::show(&mut window, |c|{
-		//c.add(1, Label::new("Hallo Welt").font_size(120.));
+		c.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
 
-		//c.add(2, &Icon::new(fa::android));
+		let b = components::Button{
+			text: "test-button",
+			..c.default()
+		};
+		c.add(1, b);
 
 		/*let i = Icon{
 			icon: fa::android,

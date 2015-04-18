@@ -1,7 +1,4 @@
-use Widget;
-use Context;
-//use components::Label;
-use Event;
+use super::super::prelude::*;
 use std::default::Default;
 
 #[derive(Debug, Clone, Copy)]
@@ -57,12 +54,11 @@ impl<'a> Widget for Button<'a>{
     type Event = ButtonEvent;
     type State = ();
 
-    fn render<C:Context>(&self, ctx: &mut C) {
-        let hover = ctx.focused();
+    fn render<C:Context>(&self, c: &mut C) {
+        let hovered = c.hovered();
+        println!("draw_button  {:?}", self);
 
-        //some values for the event listener
-        let (px, py) = ctx.pos();
-        let (sx, sy) = (px+self.width, py+self.height);
+        c.draw_path(Path::rect(0.,0.,100.,100.));
 
         /*ctx.on(box move |e,h|match e{
             &Event::MouseButtonDown{x,y,..}
@@ -78,19 +74,20 @@ impl<'a> Widget for Button<'a>{
             _ => {}
         });*/
         /*
-        ctx.on_hover(|e|{
+        c.on_hover(|e|{
 
         });
-        ctx.on_click(|e|{
+        c.on_click(|e|{
 
         });
-        ctx.on_key_down(|e|{
+        c.on_key_down(|e|{
 
         });
         */
 
-        /*
         //TODO: if focused make click on enter
+
+        /*
         ctx.draw(move |c|{
             if hover{
                 c.set_source_rgb(0.55, 0.55, 0.95);
@@ -107,4 +104,6 @@ impl<'a> Widget for Button<'a>{
         //let (height, width) = ctx.measure(l);
         //ctx.add(1, &l);
     }
+
+    fn name() -> &'static str{"Button"}
 }

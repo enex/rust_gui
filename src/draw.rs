@@ -113,6 +113,13 @@ impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> Path<I, V>{
 	}
 }
 
+impl Path<[PathInstr; 5], [f32; 8]>{
+	/// create a path whic is a rect
+	pub fn rect(x: f32, y: f32, width: f32, height: f32) -> Path<[PathInstr; 5], [f32; 8]>{
+		path!(M:x,y; L:(x+width),y; L:(x+width),(y+height); L:x,(y+height); Z:)
+	}
+}
+
 impl Path<Vec<PathInstr>, Vec<f32>>{
 	/// create a new path with vecor items
 	pub fn new() -> Path<Vec<PathInstr>, Vec<f32>>{

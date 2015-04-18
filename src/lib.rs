@@ -12,8 +12,9 @@ extern crate glutin;
 extern crate nanovg;
 extern crate gl;
 
-pub use glutin::{Event, ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
-pub use context::Context;
+pub use glutin::{ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
+use glutin::Event;
+pub use context::{Context, DrawContext};
 use state::State;
 use std::default::Default;
 pub use nanovg::{Ctx, Color, Font};
@@ -44,6 +45,7 @@ pub mod prelude{
 	pub use show;
 	pub use components;
 	pub use draw::{Path, PathInstr};
+	pub use context::EventHandle;
 }
 
 pub type ID = [u16;12];
@@ -139,15 +141,9 @@ pub trait Widget{
 	/// This function is called on every type of element visible one time
 	/// by default it does nothing
 	fn init(){}
-}
 
-/// This has to be implemented by the root component of an application. This is
-/// the only component which holds its state by default and is able to mutade
-/// its propreties.
-pub trait App{
-	fn render<State>(&mut self, ctx: &mut Context);
-	fn close(&mut self){}
-	fn start(&mut self){}
+	/// the name of the widget, this is optional and for debuging
+	fn name() -> &'static str{""}
 }
 
 /// evaluate the expression, then check for GL error.
@@ -161,7 +157,7 @@ macro_rules! glcheck {
 }
 
 /// make a new graphical interface and draw it
-pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context) {
+pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut DrawContext<NanovgBackend,(),()>) {
 	let (width, height) = window.get_inner_size().unwrap();
 	let (mut width, mut height) = (width as i32, height as i32);
 
@@ -213,11 +209,11 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context) {
 			be.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
 			be.draw_path(path!(M:150,150; L:300,150; L:300,300; L:150,300; Z:));*/
 
-			/*
+
 			{
-				let mut c: Context = Context::new(&mut be, &state);
+				let mut c = DrawContext::new(&mut be, &mut state);
 				(draw)(&mut c);
-			}*/
+			}
 
 			be.end();
 			println!("draw ({}, {})", width, height);

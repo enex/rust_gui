@@ -17,9 +17,11 @@ macro_rules! setter{
     )
 }
 
+use super::prelude;
+
 //pub use self::layout::{Row, Col, Layout};
 
-//pub use self::button::{Button, ButtonEvent};
+pub use self::button::{Button, ButtonEvent};
 
 //pub use self::label::Label;
 
@@ -38,7 +40,7 @@ macro_rules! setter{
 //pub mod checkbox;
 //pub mod layout;
 //#[macro_use]
-//pub mod button;
+pub mod button;
 //pub mod label;
 
 //pub mod icon;
