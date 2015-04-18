@@ -52,6 +52,10 @@ Button{
 	}
 }
 ```
+## Ideas
+**random thoughts not jet implemented**
+
+### animation
 idea with animation
 ```rust
 let animated = Animation::new(component, |c, x|{
@@ -64,6 +68,20 @@ c.add(1, animated);
 this means to just use a wrapper component which takes the component which
 should be animated and manages the state of the animation. on every tick
 event it calls the clusure modifying the component with the current paramer.
+
+### styling
+The context handles the style if a element is not styled the values returned
+from style are the default values. If there is something specified, this style
+will be applied to the component if not overridden. This way each component
+can be easily styled. Later in the process I might develop a small css like
+style language to make styling applications as easy as styling html.
+
+```rust
+let b = Button{
+	..c.style("agree")
+};
+c.add(1, b);
+```
 
 ## TODO:
  - make component system work
