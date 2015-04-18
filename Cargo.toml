@@ -9,14 +9,11 @@ readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
 description = "react rust ui  a ReactJS like UI library"
 
-[dependencies.cairo]
-git="https://github.com/passcod/rust-cairo"
-
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin"
 
-#[dependencies.nanovg]
-#git="https://github.com/KevinKelley/nanovg-rs"
+[dependencies.nanovg]
+git="https://github.com/enex/nanovg-rs"
 
 [dependencies.gl]
 git = "https://github.com/bjz/gl-rs"

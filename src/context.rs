@@ -1,22 +1,48 @@
 use Widget;
 use ID;
 use glutin;
+use draw;
 use std::any::Any;
 use state::State as AppState;
 use std::marker::PhantomData;
 use std::default::Default;
 
-pub struct Context<'a, Event, State>{
-	depth: u8,
-	id: ID,
-	state: &'a AppState,
+/// trait to register events
+pub trait EventRegister{
+	fn on_hover<F: Fn()>(&mut self, f: F){}
 
+	/// register event listener for click event
+	fn on_click(&mut self){}
+
+	/// register event listener for key event
+	fn on_key(&mut self){}
+}
+
+pub trait Context: EventRegister{
+	fn add(){}
+	fn with_event();
+	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
+			(&mut self, _: draw::Path<I,V>){}
+	fn state();
+
+	//event listening
+}
+
+/*pub struct Context<'a, Event, State>{
+	/// how deep is the component this context belongs to
+	depth: u8,
+	/// id of the component the context belongs to
+	id: ID,
+	/// the application state
+	state: &'a mut AppState,
+
+	//PhantomData for Event and State to make it compile
 	e: PhantomData<Event>,
 	s: PhantomData<State>,
 }
 
 impl<'a, Event, State> Context<'a, Event, State>{
-	pub fn new(/*ctx: &'a mut Ctx,*/ state: &'a AppState) -> Context<'a, Event, State>{
+	pub fn new(state: &'a mut AppState) -> Context<'a, Event, State>{
 		Context{
 			depth: 0,
 			id: [0; 12],
@@ -34,8 +60,7 @@ impl<'a, Event, State> Context<'a, Event, State>{
 
 		let mut c:Context<E,S> = Context{
 			id: nid,
-			depth: self.depth+1,
-			//ctx: self.ctx,
+			depth: self.depth + 1,
 			state: self.state,
 			e: PhantomData,
 			s: PhantomData
@@ -53,23 +78,8 @@ impl<'a, Event, State> Context<'a, Event, State>{
 	}*/
 
 	/// the id of the current component
-	#[stable]
 	pub fn id(&self) -> ID{
 		self.id
-	}
-
-
-	/// this function registers a event listener, the closure is called
-	/// on every event it should decide if the event is relevant and then it should
-	/// return true otherwhise it should do nothing
-	/// If variables in its scope should be used the enviroment has to be
-	/// captured by using the move keyword like so: move |event| ...
-	pub fn on<F>(&mut self, filter: Box<F>)
-			where F: Fn(&glutin::Event, &mut EventHandle<Event, State>)+'static {
-		let s = self.id();
-		//TODO: check if not already exsisting
-		unimplemented!();
-		//self.window.register_event_listener(s, filter)
 	}
 
 	/// returns true if the element is currently focused, if not it returns false
@@ -78,7 +88,7 @@ impl<'a, Event, State> Context<'a, Event, State>{
 	}
 
 	/// wether the element is hovered at the moment
-	pub fn hover(&self) -> bool{
+	pub fn hovered(&self) -> bool{
 		self.state.hovered == self.id
 	}
 
@@ -110,6 +120,21 @@ impl<'a, Event, State> Context<'a, Event, State>{
 	}
 	pub fn pos_x(&mut self) -> f64{let (x,_) = self.pos(); x}
 	pub fn pos_y(&mut self) -> f64{let (_,y) = self.pos(); y}
+}
+
+/// event handling, closures can be registered to listen for certain events
+/// they are called if this event happens. It is not possible to modify
+/// a property in the closure, you can just modify the element state
+/// and you can throw a event which is propagated to the parent element
+impl <'a, Event, State> Context<'a, Event, State>{
+	/// register event listener for hover event
+	pub fn on_hover<F: Fn()>(&mut self, f: F){}
+
+	/// register event listener for click event
+	pub fn on_click(&mut self){}
+
+	/// register event listener for key event
+	pub fn on_key(&mut self){}
 }
 
 
@@ -163,4 +188,4 @@ impl<'a, Event, State:'a> EventHandle<'a, Event, State>
 		unimplemented!();
 		//TODO: make this work somehow
 	}
-}
+}*/

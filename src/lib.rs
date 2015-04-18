@@ -9,48 +9,49 @@
 
 extern crate libc;
 extern crate glutin;
-extern crate cairo;
+extern crate nanovg;
 extern crate gl;
 
 pub use glutin::{Event, ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::Context;
 use state::State;
 use std::default::Default;
+pub use nanovg::{Ctx, Color, Font};
+use nanovg_backend::NanovgBackend;
+use draw::{Path, PathInstr};
 
 pub mod context;
 #[macro_use]
 pub mod components;
+#[macro_use]
 pub mod draw;
 pub mod primitives;
-pub mod cairo_backend;
-pub mod debug;
+pub mod nanovg_backend;
+//pub mod debug;
 mod state;
 
 #[macro_use]
 mod macros;
+
+pub mod prelude{
+	//! this is a bundle of the things most frequently needed
+	//!
+	//! 	use rui::prelude::*;
+
+	pub use primitives;
+	pub use Widget;
+	pub use context::{Context, EventRegister};
+	pub use show;
+	pub use components;
+	pub use draw::{Path, PathInstr};
+}
 
 pub type ID = [u16;12];
 
 //TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
 
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Color{
-	r: f32,
-	g: f32,
-	b: f32,
-	a: f32,
-}
-impl Color{
-	fn rgb(r: u8, g: u8, b: u8) -> Color{
-		Color{
-			r:((r as f32)/255.),
-			g:((g as f32)/255.),
-			b:((b as f32)/255.),
-			..Default::default()
-		}
-	}
-}
+//TODO: replace path conversions with more performant zero allocation ones
 
 /// Backend which should be implemented to support drawing operations
 /// the first backend will be cairo + OpenGL but other backends should follow
@@ -58,9 +59,12 @@ pub trait Backend{
 	/// load a font form a given path and make it available for later use
 	/// if it is called with the same font more than one time nothing
 	/// should happen
-	fn load_font(&mut self, &str);
+	fn load_font(&mut self, &str, &str);
 
-	fn draw_path(&mut self, primitives::Path);
+	fn begin(&mut self, width: i32, height: i32){}
+
+	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
+		(&mut self, primitives::Path<I, V>);
 
 	//drawing primitives
 	fn draw_line(&mut self, line: primitives::Line){
@@ -102,6 +106,8 @@ pub trait Backend{
 		p.close_path();
 		self.draw_path(p);
 	}
+
+	fn end(&mut self){}
 }
 
 /// the trait implemented by all widgets displayed.
@@ -120,7 +126,7 @@ pub trait Widget{
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
 	/// able to change anything.
 	/// It returns the (width, hight) of the area affected by the render method
-	fn render(&self, ctx: &mut Context<Self::Event, Self::State>);
+	fn render<C:Context>(&self, ctx: &mut C);
 
 	/// Method which is used by the layout engine to get the size of a component
 	/// by default the size will be calculated by using the render function with
@@ -139,7 +145,7 @@ pub trait Widget{
 /// the only component which holds its state by default and is able to mutade
 /// its propreties.
 pub trait App{
-	fn render<State>(&mut self, ctx: &mut Context<(),State>);
+	fn render<State>(&mut self, ctx: &mut Context);
 	fn close(&mut self){}
 	fn start(&mut self){}
 }
@@ -155,7 +161,7 @@ macro_rules! glcheck {
 }
 
 /// make a new graphical interface and draw it
-pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<(),()>) {
+pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context) {
 	let (width, height) = window.get_inner_size().unwrap();
 	let (mut width, mut height) = (width as i32, height as i32);
 
@@ -163,19 +169,16 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 
 	gl::load_with(|symbol| window.get_proc_address(symbol));
 
+	let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
 	let mut redraw = true;
 
 	let mut state = State::new();//the application state
 
-	// create a cairo surface, this is mutable bacause it has to be resized when the
-	// window size changes
-	let mut surface = cairo::surface::Surface::create_similar_image(
-		cairo::surface::format::Format::ARGB32,
-		width,
-		height,
-	);
-	assert_eq!(surface.status(), cairo::Status::Success);
-	let mut ctx = cairo::Cairo::create(&mut surface);
+	let mut be = NanovgBackend::new(vg);
+
+	be.load_font("sans", "res/Roboto-Regular.ttf");
+	be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
+	be.load_font("sans-bold", "res/Roboto-Bold.ttf");
 
 	while !window.is_closed() {
 		window.wait_events();
@@ -203,17 +206,20 @@ pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut Context<()
 		}
 
 		if redraw{
-			//render cairo
-			ctx.save();
-			ctx.set_source_rgba(0.0,0.0,0.25,1.0);
-			ctx.paint();
+			//render nanovg
+			be.begin(width, height);
 
-			ctx.move_to(0.0,0.0);
-			ctx.line_to(0.5, 0.1);
+			/*
+			be.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
+			be.draw_path(path!(M:150,150; L:300,150; L:300,300; L:150,300; Z:));*/
 
-			unsafe{
-				
-			}
+			/*
+			{
+				let mut c: Context = Context::new(&mut be, &state);
+				(draw)(&mut c);
+			}*/
+
+			be.end();
 			println!("draw ({}, {})", width, height);
 			redraw = false;
 			window.swap_buffers();

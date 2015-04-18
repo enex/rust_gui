@@ -1,10 +1,10 @@
 use Widget;
 use Context;
-use components::Label;
+//use components::Label;
 use Event;
-use SystemCursor;
+use std::default::Default;
 
-#[derive(Debug, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum ButtonEvent{
 	/// click event on mouse down
     Click,
@@ -18,20 +18,21 @@ pub enum ButtonEvent{
 
 /// Usage:
 ///
-/// ```
-/// use gui::components::Button;
+/// ```rust
+/// use rui::components::Button;
+/// use std::default::Default;
 ///
 /// ctx.add(Button{
 /// 	text: "Button",
 /// 	..Default::default()
 /// });
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Button<'a>{
     pub text: &'a str,
-    pub width: f32,
-    pub height: f32,
-    pub background_color: (f32, f32, f32),
+    pub width: f64,
+    pub height: f64,
+    pub background_color: (f64, f64, f64),
 }
 
 impl<'a> Default for Button<'a>{
@@ -49,20 +50,21 @@ setter!(Button<'a>,
     width: f64,
     height: f64,
     text: &'a str,
-    background_color: (f64,f64,f64)
+    background_color: (f64, f64, f64)
 );
 
 impl<'a> Widget for Button<'a>{
     type Event = ButtonEvent;
+    type State = ();
 
-    fn render(&self, ctx: &mut Context) {
+    fn render<C:Context>(&self, ctx: &mut C) {
         let hover = ctx.focused();
 
         //some values for the event listener
         let (px, py) = ctx.pos();
         let (sx, sy) = (px+self.width, py+self.height);
 
-        ctx.on(box move |e,h|match e{
+        /*ctx.on(box move |e,h|match e{
             &Event::MouseButtonDown{x,y,..}
                 if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy)) => {
                 h.focus();
@@ -74,8 +76,20 @@ impl<'a> Widget for Button<'a>{
                 //println!("set to hand");
             },
             _ => {}
-        });
+        });*/
+        /*
+        ctx.on_hover(|e|{
 
+        });
+        ctx.on_click(|e|{
+
+        });
+        ctx.on_key_down(|e|{
+
+        });
+        */
+
+        /*
         //TODO: if focused make click on enter
         ctx.draw(move |c|{
             if hover{
@@ -86,12 +100,11 @@ impl<'a> Widget for Button<'a>{
             c.rectangle(0.0, 0.0, self.width, self.height);
             c.fill();
             c.stroke();
-        });
+        });*/
         //ctx.go_to(0.0,0.0);
-        ctx.goto(3.0, 0.0);
-        ctx.add(1, Label::new(self.text.clone()).font_size(self.height - 4.0))
-    }
-    fn size(&self) -> (f64, f64) {
-        (self.width, self.height)
+        //ctx.goto(3.0, 0.0);
+        //let l = Label::new(self.text.clone()).font_size(self.height - 4.0);
+        //let (height, width) = ctx.measure(l);
+        //ctx.add(1, &l);
     }
 }

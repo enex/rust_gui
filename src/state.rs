@@ -5,12 +5,22 @@ use std::any::Any;
 use std::default::Default;
 use std::collections::BTreeMap;
 
+#[derive(Debug, Clone, Copy)]
+pub enum EventListener{
+    KeyEvent,
+    HoverEvent(f64, f64),
+    ClickEvent(f64, f64),
+}
+
 /// this struct is responsible for managing all the state of the gui
 #[derive(Debug)]
 pub struct State{
     pub state: BTreeMap<ID, Box<Any>>,
     pub focused: ID,
     pub hovered: ID,
+    /// list of event listeners and their element
+    pub listeners: Vec<(ID, EventListener)>,
+    //TODO: add way to track which widgets are dirty
 	//TODO: add heshset to keep track of widget types
 }
 
@@ -63,6 +73,7 @@ impl Default for State{
             focused: [0; 12],
             hovered: [0; 12],
             state: BTreeMap::new(),
+            listeners: Vec::new(),
         }
 	}
 }

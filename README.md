@@ -1,7 +1,7 @@
 # GUI for Rust
 
 Little an simple gui library for [Rust] inspired by react.
-gui and uses cairo as default backend library for rendering.
+gui and uses nanovg as default backend library for rendering.
 
 Everything should be abstracted into the widget api including all drawing-operations.
 This allows to switch the backend without changing the api. Aditionaly it simplifyes
