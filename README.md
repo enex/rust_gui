@@ -85,16 +85,18 @@ c.add(1, b);
 
 ## TODO:
  - [ ] make component system work
- - [ ] build some basic components
-   - [ ] button
-   - [ ] radio
-   - [ ] label
-   - [ ] lineEdit
-   - [ ] numberInput
-   - [ ] multilineEdit
+ - [ ] [build some basic components](rust_gui/src/components)
+   - [ ] Icon
+   - [ ] Button
+   - [ ] Radio
+   - [ ] Image
+   - [ ] Label
+   - [ ] LineEdit
+   - [ ] NumberInput
+   - [ ] MultilineEdit
    - [ ] Tabs
    - [ ] List
-   - [ ] Box-Layout
+   - [ ] BoxLayout
  - [ ] create macro for easier interaction
  - [ ] animation
  - [ ] caching
