@@ -84,24 +84,22 @@ c.add(1, b);
 ```
 
 ## TODO:
- - make component system work
- - build some basic components
-   - button
-   - radio
-   - label
-   - lineEdit
-   - numberInput
-   - multilineEdit
-   - Tabs
-   - List
-   - Box-Layout
- - create macro for easier interaction
- - animation
- - caching
- - state management
- - documentation
- - theming
- - publish
+ -[ ] make component system work
+ -[ ] build some basic components
+   -[ ] button
+   -[ ] radio
+   -[ ] label
+   -[ ] lineEdit
+   -[ ] numberInput
+   -[ ] multilineEdit
+   -[ ] Tabs
+   -[ ] List
+   -[ ] Box-Layout
+ -[ ] create macro for easier interaction
+ -[ ] animation
+ -[ ] caching
+ -[ ] state management
+ -[ ] theming
 
 ## Screenshots
 
