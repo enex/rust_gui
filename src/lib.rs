@@ -14,12 +14,13 @@ extern crate gl;
 
 pub use glutin::{ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 use glutin::Event;
-pub use context::{Context, DrawContext};
+pub use context::{Context, DrawContext, EventContext};
 use state::State;
 use std::default::Default;
 pub use nanovg::{Ctx, Color, Font};
 use nanovg_backend::NanovgBackend;
 use draw::{Path, PathInstr};
+use std::any::Any;
 
 pub mod context;
 #[macro_use]
@@ -42,10 +43,10 @@ pub mod prelude{
 	pub use primitives;
 	pub use Widget;
 	pub use context::{Context, EventRegister};
-	pub use show;
 	pub use components;
 	pub use draw::{Path, PathInstr};
 	pub use context::EventHandle;
+	pub use App;
 }
 
 pub type ID = [u16;12];
@@ -119,16 +120,16 @@ pub trait Widget{
 	/// The state of this widget if the widget has no state, nothing has
 	/// to b done, the state type has to implement the default trait and
 	/// it will have the dafault value when accessed first.
-	type State = ();
+	type State: Any + Default;
 
 	/// the event the widget returns this is a enum most of the times
-	type Event = ();
+	type Event;
 
 	/// In this function only rendering to the screen and atouching event listeners is done
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
 	/// able to change anything.
 	/// It returns the (width, hight) of the area affected by the render method
-	fn render<C:Context>(&self, ctx: &mut C);
+	fn render<C:Context<Event=Self::Event, State=Self::State>>(&self, ctx: &mut C);
 
 	/// Method which is used by the layout engine to get the size of a component
 	/// by default the size will be calculated by using the render function with
@@ -156,71 +157,89 @@ macro_rules! glcheck {
 	)
 }
 
-/// make a new graphical interface and draw it
-pub fn show<F>(window: &mut glutin::Window, draw: F) where F: Fn(&mut DrawContext<NanovgBackend,(),()>) {
-	let (width, height) = window.get_inner_size().unwrap();
-	let (mut width, mut height) = (width as i32, height as i32);
+/// this represents a whole app and contains the root wiget
+pub struct App<W>{
+	window: glutin::Window,
+	root: W,
+	size: (i32, i32),
+	be: NanovgBackend,
+	state: State,
+	begun: bool,
+	redraw: bool,
+}
 
-	let mut mouse_pos: (i32, i32) = (0, 0);
-
-	gl::load_with(|symbol| window.get_proc_address(symbol));
-
-	let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
-	let mut redraw = true;
-
-	let mut state = State::new();//the application state
-
-	let mut be = NanovgBackend::new(vg);
-
-	be.load_font("sans", "res/Roboto-Regular.ttf");
-	be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
-	be.load_font("sans-bold", "res/Roboto-Bold.ttf");
-
-	while !window.is_closed() {
-		window.wait_events();
-
-		for event in window.poll_events() {
-			use glutin::Event::*;
-			match event{
-				Event::Resized(w, h) => {//handle resizes
-					println!("({},{})", w, h);
-					width = w as i32;
-					height = h as i32;
-					redraw = true;
-				},
-				Event::MouseMoved(p) => {
-					mouse_pos = p;
-				},
-				Event::MouseInput(glutin::ElementState::Pressed, _) => {
-					let x = mouse_pos.0;
-					let y = mouse_pos.1;
-					println!("new data at ({}, {})", x, y);
-				},
-				_ => ()
-			}
-			println!("{:?}", event);
-		}
-
-		if redraw{
-			//render nanovg
-			be.begin(width, height);
-
-			/*
-			be.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
-			be.draw_path(path!(M:150,150; L:300,150; L:300,300; L:150,300; Z:));*/
-
-
-			{
-				let mut c = DrawContext::new(&mut be, &mut state);
-				(draw)(&mut c);
-			}
-
-			be.end();
-			println!("draw ({}, {})", width, height);
-			redraw = false;
-			window.swap_buffers();
+impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
+	pub fn new(window: glutin::Window, root:W) -> App<W>{
+		App{
+			root: root,
+			size: {
+				let (w, h) = window.get_inner_size().unwrap();
+				(w as i32, h as i32)
+			},
+			be: {
+				gl::load_with(|symbol| window.get_proc_address(symbol));
+				let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
+				NanovgBackend::new(vg)
+			},
+			window: window,
+			state: State::new(),
+			begun: false,
+			redraw: true,
 		}
 	}
 
-	//TODO: clear resources before exiting
+	/// start drawing process if not alerady started
+	fn ps(&mut self){
+		self.be.begin(self.size.0, self.size.1);
+		self.begun = true;
+	}
+
+	/// start the application
+	pub fn show(&mut self){
+		self.be.load_font("sans", "res/Roboto-Regular.ttf");
+		self.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
+		self.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
+
+		while !self.window.is_closed() {
+			self.window.wait_events();
+
+			for event in self.window.poll_events() {
+				use glutin::Event::*;
+
+				match event{
+					Event::Resized(w, h) => {//handle resizes
+						self.size.0 = w as i32;
+						self.size.1 = h as i32;
+						self.redraw = true;
+					},
+					Event::MouseInput(glutin::ElementState::Pressed, _) => {
+						//let x = mouse_pos.0;
+						//let y = mouse_pos.1;
+						//TODO: implement event handling
+						println!("mouse input");
+						let mut c = EventContext::new(&mut self.be, &mut self.state);
+						self.root.render(&mut c);
+					},
+					_ => ()
+				}
+				//println!("{:?}", event);
+			}
+
+			if self.redraw{
+				self.ps();
+				{
+					let mut c = DrawContext::new(&mut self.be, &mut self.state);
+					self.root.render(&mut c);
+				}
+				println!("draw ({}, {})", self.size.0, self.size.1);
+				self.redraw = false;
+			}
+
+			if self.begun{
+				self.be.end();
+				self.window.swap_buffers();
+				self.begun = false;
+			}
+		}
+	}
 }

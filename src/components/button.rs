@@ -54,55 +54,21 @@ impl<'a> Widget for Button<'a>{
     type Event = ButtonEvent;
     type State = ();
 
-    fn render<C:Context>(&self, c: &mut C) {
+    fn render<C:Context<Event=ButtonEvent, State=()>>(&self, c: &mut C) {
         let hovered = c.hovered();
         println!("draw_button  {:?}", self);
 
         c.draw_path(Path::rect(0.,0.,100.,100.));
 
-        /*ctx.on(box move |e,h|match e{
-            &Event::MouseButtonDown{x,y,..}
-                if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy)) => {
-                h.focus();
-                println!("Button-event: {:?} {} ({}|{})",e, h.focused(), px, py);
-            },
-            &Event::MouseMotion{x, y, ..}
-                if ((x as f64 > px) & (y as f64 > py) & ((x as f64) < sx) & ((y as f64) < sy)) => {
-                h.set_cursor(SystemCursor::Crosshair);
-                //println!("set to hand");
-            },
-            _ => {}
-        });*/
-        /*
-        c.on_hover(|e|{
-
+        c.on_click(|pos, h| {
+            println!("Button !clicked at {:?}", pos);
+            h.emit(ButtonEvent::Click);
         });
-        c.on_click(|e|{
-
-        });
-        c.on_key_down(|e|{
-
-        });
-        */
 
         //TODO: if focused make click on enter
-
-        /*
-        ctx.draw(move |c|{
-            if hover{
-                c.set_source_rgb(0.55, 0.55, 0.95);
-            }else{
-                c.set_source_rgb(0.27, 0.36, 0.93);
-            }
-            c.rectangle(0.0, 0.0, self.width, self.height);
-            c.fill();
-            c.stroke();
-        });*/
-        //ctx.go_to(0.0,0.0);
-        //ctx.goto(3.0, 0.0);
-        //let l = Label::new(self.text.clone()).font_size(self.height - 4.0);
-        //let (height, width) = ctx.measure(l);
-        //ctx.add(1, &l);
+        //TODO: draw label
+        //TODO: optional icon
+        //TODO: tooltip
     }
 
     fn name() -> &'static str{"Button"}

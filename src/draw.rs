@@ -43,6 +43,7 @@ macro_rules! conv_path(
 /// # }
 /// ```
 #[macro_export]
+#[macro_use(conv_path)]
 macro_rules! path(
 	( $( $pi:ident : $( $val:expr ),* );+ )=>({
 		Path{

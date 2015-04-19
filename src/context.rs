@@ -8,16 +8,17 @@ use std::marker::PhantomData;
 use std::default::Default;
 use Backend;
 
+/// representing a position, can be returned as value form on_click for example
 #[derive(Clone, Debug, Default, Copy)]
 pub struct Pos{
-	x: f32,
-	y: f32,
+	pub x: f32,
+	pub y: f32,
 }
 
 /// trait to register events
 pub trait EventRegister{
 	type Event;
-	type State: Default;
+	type State: Any + Default;
 
 	/// register event listener for click event
 	fn on_click<F:Fn(Pos, &mut EventHandle<Self::Event, Self::State>)>(&mut self, f: F){}
@@ -26,13 +27,17 @@ pub trait EventRegister{
 	fn on_key(&mut self){}
 }
 
+/// context which the programmer uses to add widgets or to draw someting or to acces
+/// the state.
 pub trait Context: EventRegister{
 	/// add a component
 	fn add<W:Widget<State=S,Event=E>,S:Any+Default,E>(&mut self, id: u16, _: W){
 
 	}
+
 	/// add a component with coresponing position
 	fn with_event(&mut self){}
+
 	/// draw a path
 	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
 			(&mut self, _: draw::Path<I,V>){}
@@ -60,7 +65,6 @@ pub trait Context: EventRegister{
 
 /// context used to draw everything on screen
 /// this will be passed to a component if this component should be drawn
-
 //TODO: simplify
 pub struct DrawContext<'a, D, Event, State> where D:'a{
 	/// how deep is the component this context belongs to
@@ -89,7 +93,7 @@ impl<'a, D:Backend, Event, State> DrawContext<'a, D, Event, State>{
 	}
 }
 
-impl<'a, D:Backend, Event, State:Default>EventRegister for DrawContext<'a, D, Event, State>{
+impl<'a, D:Backend, Event, State:Any+Default>EventRegister for DrawContext<'a, D, Event, State>{
 	type Event = Event;
 	type State = State;
 }
@@ -134,21 +138,116 @@ impl<'a, D:Backend, Event, State:Any+Default>Context for DrawContext<'a, D, Even
 	}
 }
 
-/// this struct is used to handle events. Every registered event handler will
-/// get a instance of this struct. This way it can for example propagate
-pub struct EventHandle<'a, Event, State>{
-	id: &'a ID,
+//TODO: group constant data together so that only one pointer is needed per context
+//TODO: implement emit with a struct (used as trait object) with closure and context associated
+
+/// context used to handle events. This will be passed to every Widget on the way to
+/// the event receiver
+pub struct EventContext<'a, D, Event, State> where D:'a{
+	/// how deep is the component this context belongs to
+	depth: u8,
+	/// id of the component the context belongs to
+	id: ID,
+	/// the application state
 	state: &'a mut AppState,
+	be: &'a mut D,
+	emit: Option<()>,
+
 	e: PhantomData<Event>,
 	s: PhantomData<State>,
 }
 
-impl<'a, Event, State:'a> EventHandle<'a, Event, State>
-		where State: Any + Default + 'static{
+impl<'a, D:Backend, Event, State> EventContext<'a, D, Event, State>{
+	pub fn new(be: &'a mut D, state: &'a mut AppState) -> EventContext<'a, D, Event, State>{
+		println!("event context");
+
+		EventContext{
+			depth: 0,
+			id: [0; 12],
+			state: state,
+			be: be,
+			emit: None,
+
+			e: PhantomData,
+			s: PhantomData
+		}
+	}
+	/// wether the state of the component has changed, if it returns true the component
+	/// has to be redrawn
+	pub fn state_changed(&self) -> bool{
+		true
+	}
+}
+
+impl<'a, D:Backend, Event, State:Any+Default>EventRegister for EventContext<'a, D, Event, State>{
+	type Event = Event;
+	type State = State;
+
+	fn on_click<F:Fn(Pos, &mut EventHandle<Event, State>)>(&mut self, f: F){
+		let mut eh = EventHandle::new(&self.id, self.state);
+		println!("on_click  {:?}", self.id);
+		(f)(Pos{x:10.,y:10.}, &mut eh);
+	}
+}
+
+impl<'a, D:Backend, Event, State:Any+Default>Context for EventContext<'a, D, Event, State>{
+	fn state(&mut self) -> &State{
+		self.state.get(&self.id)
+	}
+	fn id(&self) -> ID{
+		self.id
+	}
+	fn focused(&self) -> bool{
+		self.state.focused == self.id
+	}
+	fn hovered(&self) -> bool{
+		self.state.hovered == self.id
+	}
+
+	fn add<W:Widget<Event=E, State=S>,S:Any+Default,E>(&mut self, id: u16, w: W){
+		let mut nid = self.id;
+		nid[self.depth as usize] = id;
+
+		println!("add: {:?} as {:?}  //event context", W::name(), nid);
+
+		let mut c:EventContext<D, E, S> = EventContext{
+			id: nid,
+			depth: self.depth + 1,
+			state: self.state,
+			be: self.be,
+			emit: None,
+			e: PhantomData,
+			s: PhantomData
+		};
+		if c.depth > 11{
+			panic!("the structure is to deep only a 12 child deep tree is allowed");
+		}
+
+		w.render(&mut c)
+	}
+}
+
+/// this struct is used to handle events. Every registered event handler will
+/// get a instance of this struct. This way it can for example propagate
+#[derive(Debug)]
+pub struct EventHandle<'a, Event, State>{
+	id: &'a ID,
+	state: &'a mut AppState,
+	/// function of the parent, called when emit gets called
+	emit: Option<()>,
+	emited: Option<Event>,
+
+	e: PhantomData<Event>,
+	s: PhantomData<State>,
+}
+
+impl<'a, Event, State:'a + Any + Default> EventHandle<'a, Event, State>{
 	pub fn new(id: &'a ID, state: &'a mut AppState) -> EventHandle<'a, Event, State>{
 		EventHandle{
 			id: id,
 			state: state,
+			emit: None,
+			emited: None,
 			e: PhantomData,
 			s: PhantomData
 		}
@@ -170,7 +269,7 @@ impl<'a, Event, State:'a> EventHandle<'a, Event, State>
 	/// emit an event for parent widgets this event can then be catched by the
 	/// parent and can be used to set the state of the widget or to propagate further
 	pub fn emit(&mut self, e: Event){
-		unimplemented!();
+		self.emited = Some(e);
 	}
 
 	/// set the widget as focused, so keyboard events can be catched by this
