@@ -12,12 +12,13 @@ extern crate glutin;
 extern crate nanovg;
 extern crate gl;
 
-pub use glutin::{ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
+pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 use glutin::Event;
 pub use context::{Context, DrawContext, EventContext, Common};
 use state::State;
 use std::default::Default;
-pub use nanovg::{Ctx, Color, Font};
+pub use nanovg::{Color, Font};
+use nanovg::Ctx;
 use nanovg_backend::NanovgBackend;
 use draw::{Path, PathInstr};
 use std::any::Any;
@@ -217,8 +218,6 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 						self.redraw = true;
 					},
 					Event::MouseInput(glutin::ElementState::Pressed, _) => {
-						//let x = mouse_pos.0;
-						//let y = mouse_pos.1;
 						//TODO: implement event handling
 						println!("mouse input");
 						let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);

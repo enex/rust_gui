@@ -15,10 +15,16 @@ pub struct Pos{
 	pub y: f32,
 }
 
+/// Type of the state, just to simplify Type declaration
 pub trait StateT: Any + Default{}
 impl<A:Any + Default> StateT for A{}
 
-pub trait EventHandler<Event, Target:Widget>: Fn(Event, &mut EventHandle<Target>) {}
+/// this trait object is passed to a event hanling function to handle the event
+pub trait EventHandle<W:Widget>{
+	/// emit a event of the specified event type that will then be propagated to the
+	/// Widget which added this Widget
+	fn emit(&mut self, e: W::Event);
+}
 
 /// context which the programmer uses to add widgets or to draw someting or to acces
 /// the state.
@@ -129,7 +135,6 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 			self.c.push(id);
 
 			//println!("add: {:?} as {:?}", NW::name(), nid);
-			self.c.depth += 1;
 			let mut c:DrawContext<D, NW> = DrawContext{
 				c: self.c,
 				e: PhantomData,
@@ -149,7 +154,9 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 /// the event receiver
 pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
-	emit: Option<&'a EEmi<W::Event>>,
+	p: PhantomData<W>,
+	emit: Option<&'a Fn(W::Event, &mut EventHandle<W>)>,
+	//TODO: optionaly also emit to parent
 }
 
 impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
@@ -158,6 +165,7 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 
 		EventContext{
 			c: c,
+			p: PhantomData,
 			emit: None,
 		}
 	}
@@ -170,13 +178,11 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W>{
 	type TWidget = W;
-	//type State = W::State;
 
 	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self, f: F){
-		let mut eh:EventHandle<W> = EventHandle::new(&self.c.id, &mut self.c.state);
-		eh.emit = self.emit;
-		println!("on_click  {:?}", self.c.id);
-		(f)(Pos{x:10.,y:10.}, &mut eh);
+		//use EventContext itsselve as EventHandle
+		let s:&mut EventHandle<W> = self;
+		(f)(Pos{x:10.,y:10.}, s);
 	}
 
 	fn id(&self) -> ID{
@@ -193,32 +199,28 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		{
 			self.c.push(id);
 
-			println!("add: {:?} //event context", W::name());
-			self.c.depth += 1;
 			let mut c:EventContext<D, NW> = EventContext{
 				c: self.c,
+				p: PhantomData,
 				emit: None,
+				//emit: None,
 			};
 
 			w.render(&mut c);
 		}
 		self.c.pop();
 	}
-
+	//TODO: amke mit correct by make EventHandle<W>
 	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>
 		(&mut self, id: u16, w: NW, f:L){
 		{
 			self.c.push(id);
-
 			println!("awe: {:?}  //event context", W::name());
-			self.c.depth += 1;
-			let ee:Emiter<NW::Event, NW> = Emiter{
-				f: &f,
-			};
 
 			let mut c:EventContext<D, NW> = EventContext{
 				c: self.c,
-				emit: Some(&ee),
+				p: PhantomData,
+				emit: Some(&f),
 			};
 
 			w.render(&mut c);
@@ -227,6 +229,16 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 	}
 }
 
+impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'a, D, W>{
+	fn emit(&mut self, e: W::Event){
+		match self.emit{
+			Some(f) => (f)(e, self),
+			None => ()
+		}
+	}
+}
+
+/*
 /// hack to use a trait object for error handling
 struct Emiter<'a,'b, Ev, W:Widget>{
 	f: &'a Fn(Ev, &mut EventHandle<'b, W>)
@@ -241,8 +253,9 @@ impl<'a,'b, Ev, W:Widget<State=S>, S:StateT> EEmi<Ev> for Emiter<'a,'b, Ev, W>{
 		//(self.f)(e, &mut eh)
 		//TODO: implement calling correctly and create EventHandle
 	}
-}
+}*/
 
+/*
 /// this struct is used to handle events. Every registered event handler will
 /// get a instance of this struct. This way it can for example propagate
 pub struct EventHandle<'a, W:Widget>{
@@ -303,3 +316,4 @@ impl<'a, W:Widget<State=State,Event=E>, State:'a + Any + Default, E> EventHandle
 		//TODO: make this work somehow
 	}
 }
+*/
