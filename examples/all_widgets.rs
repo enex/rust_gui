@@ -16,7 +16,7 @@ impl Widget for MyApp{
 			text: "test-button",
 			..c.default()
 		};
-		c.add(1, b);
+		c.awe(1, b, |e,_| println!("Event {:?}", e));
 
 		/*let i = Icon{
 			icon: fa::android,
@@ -27,7 +27,7 @@ impl Widget for MyApp{
 }
 
 fn main(){
-	let mut window = glutin::WindowBuilder::new()
+	let window = glutin::WindowBuilder::new()
 		.with_title("rui all_widgets demo".to_string())
 		.with_gl_version((3,2))
 		.with_gl_debug_flag(true)

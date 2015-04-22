@@ -1,11 +1,6 @@
 /*!
-things for drawing
-```rust
-path!(
-M 23.,23.;
-
-);
-```
+things for drawing paths should be made with the `path!` macro because this is in most
+cases more efficient and simpler.
 */
 use std::fmt::{self, Debug};
 use primitives::Rect;

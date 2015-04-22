@@ -54,8 +54,8 @@ impl<'a> Widget for Button<'a>{
     type Event = ButtonEvent;
     type State = ();
 
-    fn render<C:Context<Event=ButtonEvent, State=()>>(&self, c: &mut C) {
-        let hovered = c.hovered();
+    fn render<C: Context<TWidget=Button<'a>>>(&self, c: &mut C) {
+        //let hovered = c.hovered();
         println!("draw_button  {:?}", self);
 
         c.draw_path(Path::rect(0.,0.,100.,100.));

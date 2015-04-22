@@ -14,13 +14,14 @@ extern crate gl;
 
 pub use glutin::{ElementState, MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 use glutin::Event;
-pub use context::{Context, DrawContext, EventContext};
+pub use context::{Context, DrawContext, EventContext, Common};
 use state::State;
 use std::default::Default;
 pub use nanovg::{Ctx, Color, Font};
 use nanovg_backend::NanovgBackend;
 use draw::{Path, PathInstr};
 use std::any::Any;
+use context::StateT;
 
 pub mod context;
 #[macro_use]
@@ -42,7 +43,7 @@ pub mod prelude{
 
 	pub use primitives;
 	pub use Widget;
-	pub use context::{Context, EventRegister};
+	pub use context::Context;
 	pub use components;
 	pub use draw::{Path, PathInstr};
 	pub use context::EventHandle;
@@ -64,7 +65,7 @@ pub trait Backend{
 	/// should happen
 	fn load_font(&mut self, &str, &str);
 
-	fn begin(&mut self, width: i32, height: i32){}
+	fn begin(&mut self, _:i32, _:i32){}
 
 	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
 		(&mut self, primitives::Path<I, V>);
@@ -129,7 +130,7 @@ pub trait Widget{
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
 	/// able to change anything.
 	/// It returns the (width, hight) of the area affected by the render method
-	fn render<C:Context<Event=Self::Event, State=Self::State>>(&self, ctx: &mut C);
+	fn render<C:Context<TWidget=Self>>(&self, ctx: &mut C);
 
 	/// Method which is used by the layout engine to get the size of a component
 	/// by default the size will be calculated by using the render function with
@@ -158,31 +159,34 @@ macro_rules! glcheck {
 }
 
 /// this represents a whole app and contains the root wiget
-pub struct App<W>{
+pub struct App<W,D:Backend>{
 	window: glutin::Window,
 	root: W,
 	size: (i32, i32),
-	be: NanovgBackend,
-	state: State,
 	begun: bool,
 	redraw: bool,
+	data: Common<D>,
 }
 
-impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
-	pub fn new(window: glutin::Window, root:W) -> App<W>{
+impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
+	pub fn new(window: glutin::Window, root:W) -> App<W, NanovgBackend>{
 		App{
 			root: root,
 			size: {
 				let (w, h) = window.get_inner_size().unwrap();
 				(w as i32, h as i32)
 			},
-			be: {
-				gl::load_with(|symbol| window.get_proc_address(symbol));
-				let mut vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
-				NanovgBackend::new(vg)
+			data: Common{
+				be: {
+					gl::load_with(|symbol| window.get_proc_address(symbol));
+					let vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
+					NanovgBackend::new(vg)
+				},
+				state: State::new(),
+				depth: 0,
+				id: [0; 12],
 			},
 			window: window,
-			state: State::new(),
 			begun: false,
 			redraw: true,
 		}
@@ -190,15 +194,15 @@ impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
 
 	/// start drawing process if not alerady started
 	fn ps(&mut self){
-		self.be.begin(self.size.0, self.size.1);
+		self.data.be.begin(self.size.0, self.size.1);
 		self.begun = true;
 	}
 
 	/// start the application
 	pub fn show(&mut self){
-		self.be.load_font("sans", "res/Roboto-Regular.ttf");
-		self.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
-		self.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
+		self.data.be.load_font("sans", "res/Roboto-Regular.ttf");
+		self.data.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
+		self.data.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
 
 		while !self.window.is_closed() {
 			self.window.wait_events();
@@ -217,7 +221,7 @@ impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
 						//let y = mouse_pos.1;
 						//TODO: implement event handling
 						println!("mouse input");
-						let mut c = EventContext::new(&mut self.be, &mut self.state);
+						let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);
 						self.root.render(&mut c);
 					},
 					_ => ()
@@ -228,7 +232,8 @@ impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
 			if self.redraw{
 				self.ps();
 				{
-					let mut c = DrawContext::new(&mut self.be, &mut self.state);
+					let mut c:DrawContext<NanovgBackend, W> =
+						DrawContext::new(&mut self.data);
 					self.root.render(&mut c);
 				}
 				println!("draw ({}, {})", self.size.0, self.size.1);
@@ -236,7 +241,7 @@ impl<W:Widget<State=S,Event=E>,S:Default+Any,E> App<W>{
 			}
 
 			if self.begun{
-				self.be.end();
+				self.data.be.end();
 				self.window.swap_buffers();
 				self.begun = false;
 			}
