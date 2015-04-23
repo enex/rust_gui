@@ -17,8 +17,6 @@ macro_rules! setter{
     )
 }
 
-use super::prelude;
-
 //pub use self::layout::{Row, Col, Layout};
 
 pub use self::button::{Button, ButtonEvent};
@@ -29,8 +27,8 @@ pub use self::button::{Button, ButtonEvent};
 //pub use self::slider::{Slider, SliderEvent};
 //pub use self::checkbox::{Checkbox, CheckboxEvent};
 //pub use self::text_input::{TextInput, TextInputEvent};
-//pub use self::icon::Icon;
-//pub use self::icon::fa;
+pub use self::icon::Icon;
+pub use self::icon::fa;
 
 //pub mod image;
 //pub mod text_input;
@@ -43,4 +41,4 @@ pub use self::button::{Button, ButtonEvent};
 pub mod button;
 //pub mod label;
 
-//pub mod icon;
+pub mod icon;

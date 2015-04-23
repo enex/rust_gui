@@ -97,8 +97,8 @@ pub struct Path<I:AsRef<[PathInstr]>, V:AsRef<[f32]>>{
 }
 
 impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> Path<I, V>{
-	/// check if point is in path
-	pub fn is_point_in_path(&self, x: f32, y: f32) -> bool{
+	/// check if point is in path (x,y)
+	pub fn is_point_in_path(&self, _: f32, _: f32) -> bool{
 		unimplemented!()
 	}
 

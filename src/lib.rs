@@ -13,16 +13,19 @@ extern crate nanovg;
 extern crate gl;
 
 pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
-use glutin::Event;
 pub use context::{Context, DrawContext, EventContext, Common};
+pub use nanovg::{Color, Font};
+
 use state::State;
 use std::default::Default;
-pub use nanovg::{Color, Font};
 use nanovg::Ctx;
 use nanovg_backend::NanovgBackend;
 use draw::{Path, PathInstr};
 use std::any::Any;
 use context::StateT;
+use glutin::Event;
+
+use std::ops;
 
 pub mod context;
 #[macro_use]
@@ -53,10 +56,57 @@ pub mod prelude{
 
 pub type ID = [u16;12];
 
+/// Transformation matrix used to manipulate the result
+#[derive(Debug, Clone, Copy)]
+pub struct Transform(pub [f32; 6]);
+
+impl Transform{
+	pub fn null() -> Transform{
+		Transform([0.;6])
+	}
+	/// normal transformation matrix
+	///
+	/// 	[1, 0, 0, 1, 0, 0]
+	pub fn normal() -> Transform{
+		Transform([1.,0.,0.,1.,0.,0.])
+	}
+	pub fn translate(x: f32, y: f32) -> Transform{
+		Transform([0.,0.,0.,0.,x,y])
+	}
+	//TODO: implement more functions and operations
+}
+impl ops::Add for Transform{
+	type Output = Transform;
+
+	fn add(self, rhs: Transform) -> Transform{
+		Transform([
+			self.0[0] + rhs.0[0],
+			self.0[1] + rhs.0[1],
+			self.0[2] + rhs.0[2],
+			self.0[3] + rhs.0[3],
+			self.0[4] + rhs.0[4],
+			self.0[5] + rhs.0[5],
+		])
+	}
+}
+impl ops::Sub for Transform{
+	type Output = Transform;
+
+	fn sub(self, rhs: Transform) -> Transform{
+		Transform([
+			self.0[0] - rhs.0[0],
+			self.0[1] - rhs.0[1],
+			self.0[2] - rhs.0[2],
+			self.0[3] - rhs.0[3],
+			self.0[4] - rhs.0[4],
+			self.0[5] - rhs.0[5],
+		])
+	}
+}
+//TODO: implement calc point with matrix
+
 //TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
-
-//TODO: replace path conversions with more performant zero allocation ones
 
 /// Backend which should be implemented to support drawing operations
 /// the first backend will be cairo + OpenGL but other backends should follow
@@ -66,6 +116,15 @@ pub trait Backend{
 	/// should happen
 	fn load_font(&mut self, &str, &str);
 
+	fn transform(&mut self, Transform);
+	fn current_transform(&self) -> Transform;
+
+	fn find_font(&self, name: &str) -> Option<Font>;
+	fn font_face(&mut self, font: &str);
+
+    fn text(&self, x: f32, y: f32, text: &str) -> f32;
+
+	/// start drawing the path. The size of the Frame is provided.
 	fn begin(&mut self, _:i32, _:i32){}
 
 	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
@@ -73,28 +132,26 @@ pub trait Backend{
 
 	//drawing primitives
 	fn draw_line(&mut self, line: primitives::Line){
-		let mut p = primitives::Path::new();
-
-		p.move_to(line.x1, line.y1);
-		p.line_to(line.x2, line.y2);
-
-		self.draw_path(p);
+		self.draw_path(path!(
+			M:line.x1,line.y1;
+			L:line.x2,line.y2
+		));
 	}
+	/// draw a rectangle
 	fn draw_rect(&mut self, rect: primitives::Rect){
-		let mut p = primitives::Path::new();
-
-		p.move_to(rect.x, rect.y);
-		p.line_to(rect.x + rect.width, rect.y);
-		p.line_to(rect.x + rect.width, rect.y + rect.height);
-		p.line_to(rect.x, rect.y + rect.height);
-		p.line_to(rect.x, rect.y);
-
-		self.draw_path(p);
+		self.draw_path(path!(M:rect.x,rect.y;
+			L:(rect.x+rect.width),rect.y;
+			L:(rect.x+rect.width),(rect.y+rect.height);
+			L:rect.x,(rect.y+rect.height);
+			Z:
+		));
 	}
+	/// draw a circle
 	fn draw_circle(&mut self, primitives::Circle){
 		//TODO: implement it with draw_path
 		unimplemented!()
 	}
+	/// draw a polygon
 	fn draw_polygon(&mut self, pg: primitives::Polygon){
 		let mut p = primitives::Path::new();
 		let mut first = true;
@@ -112,6 +169,8 @@ pub trait Backend{
 		self.draw_path(p);
 	}
 
+
+	/// end of the drawing operation for one frame
 	fn end(&mut self){}
 }
 
@@ -124,7 +183,7 @@ pub trait Widget{
 	/// it will have the dafault value when accessed first.
 	type State: Any + Default;
 
-	/// the event the widget returns this is a enum most of the times
+	/// the event the widget returns. This is a enum most of the times.
 	type Event;
 
 	/// In this function only rendering to the screen and atouching event listeners is done
@@ -149,23 +208,42 @@ pub trait Widget{
 	fn name() -> &'static str{""}
 }
 
+/*
+impl<'a, W:Widget<State=S>, S:Any+Default> Widget for &'a W{
+	type State = W::State;
+	type Event = W::Event;
+
+	fn render<C:Context<TWidget=W>>(&self, ctx: &mut C){
+		self.render(ctx)
+	}
+	fn size(&self) -> (f64, f64) {
+		self.size()
+	}
+	fn init(){W::name()}
+	fn name() -> &'static str{W::name()}
+}*/
+
 /// evaluate the expression, then check for GL error.
 macro_rules! glcheck {
-	($e: expr) => (
-		{
-			$e;
-			assert_eq!(unsafe {gl::GetError()}, 0);
-		}
-	)
+	($e: expr) => ({
+		$e;
+		assert_eq!(unsafe {gl::GetError()}, 0);
+	})
 }
 
-/// this represents a whole app and contains the root wiget
+/// this represents a whole app and contains the root widget
 pub struct App<W,D:Backend>{
+	/// the window struct responsible for event listening
 	window: glutin::Window,
+	/// the root node which is a Widget
 	root: W,
+	/// the size of the window (width, height)
 	size: (i32, i32),
+	/// whether drawing has already begun
 	begun: bool,
+	/// whether the frame has to be redrawn
 	redraw: bool,
+	///the data relevant for the contexts
 	data: Common<D>,
 }
 
@@ -186,6 +264,7 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 				state: State::new(),
 				depth: 0,
 				id: [0; 12],
+				transform: Transform::normal(),
 			},
 			window: window,
 			begun: false,

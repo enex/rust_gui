@@ -16,13 +16,14 @@ impl Widget for MyApp{
 			text: "test-button",
 			..c.default()
 		};
-		c.awe(1, b, |e,_| println!("Event {:?}", e));
+		c.awe(1, &b, |e,_| println!("Event {:?}", e));
 
-		/*let i = Icon{
-			icon: fa::android,
+
+		let i = components::Icon{
+			icon: components::fa::android,
 			..c.default()
 		};
-		c.add(3, &i)*/
+		c.add(3, &i)
 	}
 }
 

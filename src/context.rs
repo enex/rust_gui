@@ -1,12 +1,12 @@
 use Widget;
 use ID;
-use glutin;
 use draw;
 use std::any::Any;
 use state::State as AppState;
 use std::marker::PhantomData;
 use std::default::Default;
 use Backend;
+use Transform;
 
 /// representing a position, can be returned as value form on_click for example
 #[derive(Clone, Debug, Default, Copy)]
@@ -31,12 +31,13 @@ pub trait EventHandle<W:Widget>{
 pub trait Context{
 	/// Target widget the widget this context belongs to
 	type TWidget: Widget;
+	type Backend: Backend;
 
 	/// add a component
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, _: NW){}
+	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, _: u16, _: &NW){}
 
 	/// add with event adds a component and listen to events fired from this component
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>(&mut self, id: u16, w: NW, _:L){
+	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>(&mut self, id: u16, w: &NW, _:L){
 		self.add(id, w);
 	}
 
@@ -56,6 +57,15 @@ pub trait Context{
 	/// the id of the current component
 	fn id(&self) -> ID;
 
+	/// direct access to the backend or the closure won't be called, this is true
+	/// on the EventContext where nothing needs to be drawn
+	fn draw<F:Fn(&mut Self::Backend)>(&mut self, F){}
+
+	fn translate<F:Fn(&mut Self)>(&mut self, f:F){
+
+		(f)(self);
+	}
+
 	/// returns the default for every widget. This is also the way how
 	/// theming is implemented. If the style sais this should have some
 	/// specific parameters, then these are returned as a default.
@@ -64,10 +74,13 @@ pub trait Context{
 		Default::default()
 	}
 
+	fn text(&mut self, _:f32, _:f32, _:&str) -> f32{0.}
+	fn font_face(&mut self, _:&str){}
+
 	/// # event listeners
 
 	/// register event listener for click event
-	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self, f: F){}
+	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self, _: F){}
 }
 
 /// data shared betwen contexts D:Backend the backend
@@ -80,6 +93,8 @@ pub struct Common<D:Backend>{
 	pub depth: u8,
 	/// backend of the application
 	pub be: D,
+	/// the global Transformation
+	pub transform: Transform,
 }
 
 impl<D:Backend> Common<D>{
@@ -115,6 +130,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT> DrawContext<'a, D, W>{
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>{
 	type TWidget = W;
+	type Backend = D;
 
 	fn id(&self) -> ID{
 		self.c.id
@@ -129,8 +145,13 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 			(&mut self, path: draw::Path<I,V>){
 		self.c.be.draw_path(path);
 	}
-
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: NW){
+	fn text(&mut self, x:f32, y:f32, text: &str) -> f32{
+		self.c.be.text(x, y, text)
+	}
+	fn font_face(&mut self, name: &str){
+		self.c.be.font_face(name)
+	}
+	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
 			self.c.push(id);
 
@@ -144,6 +165,9 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 		}
 
 		self.c.pop();
+	}
+	fn draw<F:Fn(&mut D)>(&mut self, f: F){
+		(f)(&mut self.c.be)
 	}
 }
 
@@ -178,6 +202,7 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W>{
 	type TWidget = W;
+	type Backend = D;
 
 	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self, f: F){
 		//use EventContext itsselve as EventHandle
@@ -195,7 +220,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		self.c.state.hovered == self.id()
 	}
 
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: NW){
+	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
 			self.c.push(id);
 
@@ -210,9 +235,9 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		}
 		self.c.pop();
 	}
-	//TODO: amke mit correct by make EventHandle<W>
+	//TODO: make mit correct by make EventHandle<W>
 	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>
-		(&mut self, id: u16, w: NW, f:L){
+		(&mut self, id: u16, w: &NW, f:L){
 		{
 			self.c.push(id);
 			println!("awe: {:?}  //event context", W::name());
@@ -227,6 +252,9 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		}
 		self.c.pop();
 	}
+	/*fn draw<F:Fn(&mut D)>(&self, f: F){
+		(f)(&mut self.c.be)
+	}*/
 }
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'a, D, W>{
@@ -240,80 +268,17 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'
 
 /*
 /// hack to use a trait object for error handling
-struct Emiter<'a,'b, Ev, W:Widget>{
-	f: &'a Fn(Ev, &mut EventHandle<'b, W>)
+struct Emiter<'a, Ev, W:Widget>{
+	f: &'a Fn(Ev, &mut EventHandle<W>),
 }
 trait EEmi<E>{
-	fn emit<'b>(&'b self, E, &'b mut AppState);
+	fn emit(&self, E);
 }
-impl<'a,'b, Ev, W:Widget<State=S>, S:StateT> EEmi<Ev> for Emiter<'a,'b, Ev, W>{
-	fn emit<'c>(&'c self, e: Ev, state: &'c mut AppState){
+impl<'a, Ev, W:Widget<State=S>, S:StateT> EEmi<Ev> for Emiter<'a, Ev, W>{
+	fn emit(&self, e: Ev){
 		println!("emit the event");
 		//let mut eh:EventHandle<W> = EventHandle::new(&self.id, &mut state);
-		//(self.f)(e, &mut eh)
+		(self.f)(e, &mut eh)
 		//TODO: implement calling correctly and create EventHandle
 	}
 }*/
-
-/*
-/// this struct is used to handle events. Every registered event handler will
-/// get a instance of this struct. This way it can for example propagate
-pub struct EventHandle<'a, W:Widget>{
-	id: &'a ID,
-	state: &'a mut AppState,
-	/// function of the parent, called when emit gets called
-	emit: Option<&'a EEmi<W::Event>>,
-	//event_ctx: &mut EventContext<D, W>,
-}
-
-impl<'a, W:Widget<State=State,Event=E>, State:'a + Any + Default, E> EventHandle<'a, W>{
-	pub fn new(id: &'a ID, state: &'a mut AppState) -> EventHandle<'a, W>{
-		EventHandle{
-			id: id,
-			state: state,
-			emit: None,
-		}
-	}
-
-	//TODO: make sure the type of state is correct and use the information given
-	/*
-	/// get the state of the component immutable
-	pub fn state(&'a mut self) -> &'a State {
-		self.state.get(&self.id)
-	}
-
-	/// get mutable reference to state of the widget this marks the widget as
-	/// dirty and it will be rerendered.
-	pub fn mut_state(&'a mut self) -> &'a mut State {
-		self.state.get_mut(&self.id)
-	}
-	*/
-	/// emit an event for parent widgets this event can then be catched by the
-	/// parent and can be used to set the state of the widget or to propagate further
-	pub fn emit(&mut self, e: E){
-		match self.emit{
-			Some(ev) => {
-				ev.emit(e, self.state)
-			},
-			_ => ()
-		}
-	}
-
-	/// set the widget as focused, so keyboard events can be catched by this
-	/// component or parent components
-	pub fn focus(&mut self){
-		self.state.focused = *self.id
-	}
-
-	/// wether the current component is focused or not
-	pub fn focused(&self) -> bool{
-		self.state.focused == *self.id
-	}
-
-	/// set the cursor to one of the system cursors.
-	pub fn set_cursor(&mut self, cursor: glutin::MouseCursor){
-		unimplemented!();
-		//TODO: make this work somehow
-	}
-}
-*/

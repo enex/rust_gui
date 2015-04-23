@@ -1,6 +1,7 @@
 use Backend;
 use primitives;
 use nanovg::{self, Ctx, Font};
+use Transform;
 use Color;
 use draw;
 
@@ -21,6 +22,24 @@ impl NanovgBackend{
 impl Backend for NanovgBackend{
     fn load_font(&mut self, name: &str, path: &str){
         self.fonts.push(self.vg.create_font(name, path).unwrap())
+    }
+
+    fn transform(&mut self, t: Transform){
+        self.vg.transform(nanovg::Transform::from_array(t.0))
+    }
+    fn current_transform(&self) -> Transform{
+        Transform(self.vg.current_transform().into_array())
+    }
+
+    fn find_font(&self, name: &str) -> Option<Font>{
+        self.vg.find_font(name)
+    }
+    fn font_face(&mut self, font: &str){
+        self.vg.font_face(font)
+    }
+
+    fn text(&self, x: f32, y: f32, text: &str) -> f32{
+        self.vg.text(x,y,text)
     }
 
     fn begin(&mut self, width: i32, height: i32){

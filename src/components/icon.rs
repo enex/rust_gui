@@ -33,7 +33,7 @@ impl Widget for Icon{
 	type Event = ();
 	type State = ();
 
-	fn render(&self, ctx: &mut Context<(),()>) {
+	fn render<C:Context<TWidget=Icon>>(&self, c: &mut C) {
 		/*ctx.draw(|vg|{
             vg.font_size(self.size);
             vg.font_face("font-awesome");
@@ -44,7 +44,10 @@ impl Widget for Icon{
 			s.push(self.icon);
 			vg.text(500.,500.,&s[0..]);
         });*/
-		//TODO: do the drawing here
+		c.font_face("font-awesome");
+		let mut s = String::new();
+		s.push(self.icon);
+		c.text(500.,500., &s[..]);
 	}
 	fn init(){
 		//TODO: load the font
