@@ -10,19 +10,22 @@ impl Widget for MyApp{
 	type State = ();
 
 	fn render<C:Context>(&self, c: &mut C){
+		c.translate(200.,100.,);
 		c.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
-
+		c.reset();
 		let b = components::Button{
 			text: "test-button",
 			..c.default()
 		};
+		c.translate(10.,20.);
 		c.awe(1, &b, |e,_| println!("Event {:?}", e));
-
+		c.reset();
 
 		let i = components::Icon{
 			icon: components::fa::android,
 			..c.default()
 		};
+		c.translate(300.,20.);
 		c.add(3, &i)
 	}
 }

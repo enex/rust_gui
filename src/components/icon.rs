@@ -47,7 +47,7 @@ impl Widget for Icon{
 		c.font_face("font-awesome");
 		let mut s = String::new();
 		s.push(self.icon);
-		c.text(500.,500., &s[..]);
+		c.text(10.,10., &s[..]);
 	}
 	fn init(){
 		//TODO: load the font

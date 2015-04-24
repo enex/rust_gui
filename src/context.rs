@@ -61,10 +61,21 @@ pub trait Context{
 	/// on the EventContext where nothing needs to be drawn
 	fn draw<F:Fn(&mut Self::Backend)>(&mut self, F){}
 
-	fn translate<F:Fn(&mut Self)>(&mut self, f:F){
-
-		(f)(self);
+	/// translate the context so the following Widgets beeing drawn are positioned
+	/// after the new origin givent. This is relativ to the own origin.
+	fn translate(&mut self, x:f32, y:f32){
+		let t = Transform::translated(x,y);
+		self.transform(t);
 	}
+
+	fn scale(&mut self, x:f32, y:f32){
+		unimplemented!()
+	}
+
+	/// apply a transformation to the context
+	fn transform(&mut self, Transform);
+	/// resets all transformations done in this context.
+	fn reset(&mut self);
 
 	/// returns the default for every widget. This is also the way how
 	/// theming is implemented. If the style sais this should have some
@@ -74,7 +85,9 @@ pub trait Context{
 		Default::default()
 	}
 
+	/// directly draw some text to a given position
 	fn text(&mut self, _:f32, _:f32, _:&str) -> f32{0.}
+	/// change the font face to the given one
 	fn font_face(&mut self, _:&str){}
 
 	/// # event listeners
@@ -116,12 +129,14 @@ impl<D:Backend> Common<D>{
 //TODO: simplify
 pub struct DrawContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
+	transform: Transform,
 	e: PhantomData<W>,
 }
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT> DrawContext<'a, D, W>{
 	pub fn new(c: &'a mut Common<D>) -> DrawContext<'a, D, W>{
 		DrawContext{
+			transform: Transform::normal(),
 			c:c,
 			e: PhantomData,
 		}
@@ -145,23 +160,34 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 			(&mut self, path: draw::Path<I,V>){
 		self.c.be.draw_path(path);
 	}
+
 	fn text(&mut self, x:f32, y:f32, text: &str) -> f32{
 		self.c.be.text(x, y, text)
 	}
+
 	fn font_face(&mut self, name: &str){
 		self.c.be.font_face(name)
+	}
+
+	fn transform(&mut self, t:Transform){
+		self.transform.multiply(t);
+		self.c.be.transform(t);
+		println!("self: {:?} {:?}",t, self.transform+t);
+		println!("{:?}", self.c.be.current_transform());
+	}
+
+	fn reset(&mut self){
+		self.c.be.transform(-self.transform);
+		self.transform = Transform::null();
 	}
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
 			self.c.push(id);
 
 			//println!("add: {:?} as {:?}", NW::name(), nid);
-			let mut c:DrawContext<D, NW> = DrawContext{
-				c: self.c,
-				e: PhantomData,
-			};
-
+			let mut c:DrawContext<D, NW> = DrawContext::new(self.c);
 			w.render(&mut c);
+			c.reset();
 		}
 
 		self.c.pop();
@@ -170,6 +196,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 		(f)(&mut self.c.be)
 	}
 }
+
 
 //TODO: group constant data together so that only one pointer is needed per context
 //TODO: implement emit with a struct (used as trait object) with closure and context associated
@@ -180,6 +207,7 @@ pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
 	p: PhantomData<W>,
 	emit: Option<&'a Fn(W::Event, &mut EventHandle<W>)>,
+	transform: Transform,
 	//TODO: optionaly also emit to parent
 }
 
@@ -188,6 +216,7 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 		println!("event context");
 
 		EventContext{
+			transform: Transform::normal(),
 			c: c,
 			p: PhantomData,
 			emit: None,
@@ -219,19 +248,21 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 	fn hovered(&self) -> bool{
 		self.c.state.hovered == self.id()
 	}
-
+	fn transform(&mut self, t:Transform){
+		self.transform = self.transform + t;
+		self.c.be.transform(t);
+	}
+	fn reset(&mut self){
+		self.c.be.transform(self.transform);
+	}
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
 			self.c.push(id);
 
-			let mut c:EventContext<D, NW> = EventContext{
-				c: self.c,
-				p: PhantomData,
-				emit: None,
-				//emit: None,
-			};
+			let mut c:EventContext<D, NW> = EventContext::new(self.c);
 
 			w.render(&mut c);
+			c.reset();
 		}
 		self.c.pop();
 	}
@@ -243,12 +274,14 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 			println!("awe: {:?}  //event context", W::name());
 
 			let mut c:EventContext<D, NW> = EventContext{
+				transform: Transform::normal(),
 				c: self.c,
 				p: PhantomData,
 				emit: Some(&f),
 			};
 
 			w.render(&mut c);
+			c.reset();
 		}
 		self.c.pop();
 	}

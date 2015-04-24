@@ -15,6 +15,7 @@ extern crate gl;
 pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::{Context, DrawContext, EventContext, Common};
 pub use nanovg::{Color, Font};
+pub use transform::Transform;
 
 use state::State;
 use std::default::Default;
@@ -25,8 +26,6 @@ use std::any::Any;
 use context::StateT;
 use glutin::Event;
 
-use std::ops;
-
 pub mod context;
 #[macro_use]
 pub mod components;
@@ -34,6 +33,7 @@ pub mod components;
 pub mod draw;
 pub mod primitives;
 pub mod nanovg_backend;
+pub mod transform;
 //pub mod debug;
 mod state;
 
@@ -55,55 +55,6 @@ pub mod prelude{
 }
 
 pub type ID = [u16;12];
-
-/// Transformation matrix used to manipulate the result
-#[derive(Debug, Clone, Copy)]
-pub struct Transform(pub [f32; 6]);
-
-impl Transform{
-	pub fn null() -> Transform{
-		Transform([0.;6])
-	}
-	/// normal transformation matrix
-	///
-	/// 	[1, 0, 0, 1, 0, 0]
-	pub fn normal() -> Transform{
-		Transform([1.,0.,0.,1.,0.,0.])
-	}
-	pub fn translate(x: f32, y: f32) -> Transform{
-		Transform([0.,0.,0.,0.,x,y])
-	}
-	//TODO: implement more functions and operations
-}
-impl ops::Add for Transform{
-	type Output = Transform;
-
-	fn add(self, rhs: Transform) -> Transform{
-		Transform([
-			self.0[0] + rhs.0[0],
-			self.0[1] + rhs.0[1],
-			self.0[2] + rhs.0[2],
-			self.0[3] + rhs.0[3],
-			self.0[4] + rhs.0[4],
-			self.0[5] + rhs.0[5],
-		])
-	}
-}
-impl ops::Sub for Transform{
-	type Output = Transform;
-
-	fn sub(self, rhs: Transform) -> Transform{
-		Transform([
-			self.0[0] - rhs.0[0],
-			self.0[1] - rhs.0[1],
-			self.0[2] - rhs.0[2],
-			self.0[3] - rhs.0[3],
-			self.0[4] - rhs.0[4],
-			self.0[5] - rhs.0[5],
-		])
-	}
-}
-//TODO: implement calc point with matrix
 
 //TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
