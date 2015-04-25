@@ -14,8 +14,10 @@ pub enum ButtonEvent{
     Leave
 }
 
+/// A simple button component
+/// 
 /// ![all_widgets example](https://raw.githubusercontent.com/enex/rust_gui/master/button.png)
-/// Usage:
+/// # Usage:
 ///
 /// ```rust
 /// use rui::components::Button;
