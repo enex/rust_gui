@@ -111,9 +111,9 @@ impl Widget for TodoApp{
 		c.add(2, &d);
 		d.text = "Active";
 		c.add(3, &d);
-		c.translate(160., 470.);
+		c.translate(200., 470.);
 		d.text = "Completed";
-		c.translate(280., 470.);
+		c.translate(380., 470.);
 		c.add(4, &d);
 		//TODO: render buttons for view
 		//TODO: render clear if task is ready

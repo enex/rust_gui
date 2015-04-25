@@ -15,6 +15,8 @@ impl Widget for MyApp{
 		c.reset();
 		let b = components::Button{
 			text: "test-button",
+			height: 30.,
+			width: 120.,
 			..c.default()
 		};
 		c.translate(10.,20.);

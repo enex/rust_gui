@@ -90,8 +90,8 @@ Button{
 ## TODO:
  - [ ] make component system work
  - [ ] [build some basic components](rust_gui/src/components)
-   - [ ] Icon
-   - [ ] Button
+   - [x] Icon
+   - [x] Button ![all_widgets example](./button.png)
    - [ ] Radio
    - [ ] Image
    - [ ] Label

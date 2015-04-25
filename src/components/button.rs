@@ -1,5 +1,6 @@
 use super::super::prelude::*;
 use std::default::Default;
+use components::Label;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ButtonEvent{
@@ -13,6 +14,7 @@ pub enum ButtonEvent{
     Leave
 }
 
+/// ![all_widgets example](https://raw.githubusercontent.com/enex/rust_gui/master/button.png)
 /// Usage:
 ///
 /// ```rust
@@ -29,7 +31,7 @@ pub struct Button<'a>{
     pub text: &'a str,
     pub width: f32,
     pub height: f32,
-    pub background_color: (f32, f32, f32),
+    pub background_color: Option<Color>,
 }
 
 impl<'a> Default for Button<'a>{
@@ -38,7 +40,7 @@ impl<'a> Default for Button<'a>{
             text: "",
             width: 100.,
             height: 100.,
-            background_color: (0.5,0.5,0.5),//#4285f4
+            background_color: None,//#4285f4
         }
     }
 }
@@ -47,7 +49,7 @@ setter!(Button<'a>,
     width: f32,
     height: f32,
     text: &'a str,
-    background_color: (f32, f32, f32)
+    background_color: Option<Color>
 );
 
 impl<'a> Widget for Button<'a>{
@@ -60,7 +62,13 @@ impl<'a> Widget for Button<'a>{
 
         c.draw_path(Path::rect(0.,0.,self.width,self.height)
             .stroke(1., Color::rgb(180,180,180)));
-        c.text(10., 10. ,self.text);
+        c.translate(2., 8.);
+        let l = Label{
+            text: self.text,
+            font_size: self.height - 4.,
+            ..c.default()
+        };
+        c.add(1, &l);
         c.on_click(|pos, h| {
             println!("Button !clicked at {:?}", pos);
             h.emit(ButtonEvent::Click);
