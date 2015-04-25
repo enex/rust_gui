@@ -90,17 +90,19 @@ Button{
 ## TODO:
  - [ ] make component system work
  - [ ] [build some basic components](./src/components)
-   - [x] Icon
-   - [x] Button ![all_widgets example](./button.png)
-   - [ ] Radio
-   - [ ] Image
-   - [ ] Label
-   - [ ] LineEdit
+   - [x] [Icon](./src/components/icon.rs)
+   - [x] [Button](./src/components/button.rs) ![all_widgets example](./button.png)
+   - [ ] [Checkbox](./src/components/checkbox.rs)
+   - [ ] [Image](./src/components/image.rs)
+   - [x] [Label](./src/components/label.rs)
+   - [ ] [LineEdit](./src/components/text_input.rs)
    - [ ] NumberInput
    - [ ] MultilineEdit
-   - [ ] Tabs
+   - [ ] [Dropdown](./src/components/dropdown.rs)
+   - [ ] [Tabs](./src/components/tabs.rs)
    - [ ] List
    - [ ] BoxLayout
+ - [ ] [layout](./src/components/layout.rs)
  - [ ] create macros for easier interaction
  - [ ] animation
  - [ ] caching
