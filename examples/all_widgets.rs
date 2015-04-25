@@ -33,7 +33,10 @@ impl Widget for MyApp{
 fn main(){
 	let window = glutin::WindowBuilder::new()
 		.with_title("rui all_widgets demo".to_string())
-		.with_gl_version((3,2))
+		.with_gl(glutin::GlRequest::GlThenGles {
+	        opengl_version: (3, 2),
+	        opengles_version: (3, 2),
+	    },)
 		.with_gl_debug_flag(true)
 		.build().unwrap();
 

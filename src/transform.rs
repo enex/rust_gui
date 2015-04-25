@@ -25,7 +25,8 @@ impl Transform{
 
 	/// Sets the transform to translation matrix
 	pub fn translate(&mut self, x: f32, y:f32) {
-		self.0 = [1., 0., 0., 1., x, y];
+		self.0[4] += x;
+		self.0[5] += y;
 	}
 	/// Sets the transform to scale matrix.
 	pub fn scale(&mut self, x: f32, y: f32) {
@@ -177,4 +178,9 @@ fn test_transform_add(){
 	let a = Transform([1., 2., 3., 4., 5., 6.]);
 	let b = Transform([6., 5., 4., 3., 2., 1.]);
 	assert_eq!(a+b, Transform([7.;6]));
+}
+fn test_mulitply(){
+	//let a = Transform::translated(100.,50.);
+	//let b = Transform::translated(20., 40.);
+	//assert_eq!(a*b, );
 }

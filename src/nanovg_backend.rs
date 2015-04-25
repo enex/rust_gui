@@ -4,6 +4,7 @@ use nanovg::{self, Ctx, Font};
 use Transform;
 use Color;
 use draw;
+use draw::AsPath;
 
 pub struct NanovgBackend{
     vg: Ctx,
@@ -30,12 +31,18 @@ impl Backend for NanovgBackend{
     fn current_transform(&self) -> Transform{
         Transform(self.vg.current_transform().into_array())
     }
+    fn reset_transform(&mut self){
+        self.vg.reset_transform();
+    }
 
     fn find_font(&self, name: &str) -> Option<Font>{
         self.vg.find_font(name)
     }
     fn font_face(&mut self, font: &str){
         self.vg.font_face(font)
+    }
+    fn font_size(&mut self, size: f32){
+        self.vg.font_size(size)
     }
 
     fn text(&self, x: f32, y: f32, text: &str) -> f32{
@@ -49,18 +56,22 @@ impl Backend for NanovgBackend{
         self.vg.end_frame();
     }
 
-    fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
-            (&mut self, path: primitives::Path<I, V>){
-        let mut vi = path.vals.as_ref().iter();
+    fn draw_path<P:AsPath>(&mut self, path: P){
     	macro_rules! tv(($i:ident)=>(match $i.next(){Some(e)=>e,_=>return}.clone()));
 
         self.vg.begin_path();
 
-        //just for demonstration
-        self.vg.fill_color(Color::rgb(48, 121, 237));
-        self.vg.stroke_color(Color::rgb(34, 34, 34));
+        //fill and stroke rules
+        if let Some(s) = path.get_stroke(){
+            self.vg.stroke_width(s.0);
+            self.vg.stroke_color(s.1);
+        }
+        if let Some(f) = path.get_fill(){
+            self.vg.fill_color(f);
+        }
 
-    	for i in path.instr.as_ref().iter(){
+        let mut vi = path.values().iter();
+    	for i in path.instructions().iter(){
     		use draw::PathInstr::*;
 
     		match i{
@@ -73,7 +84,11 @@ impl Backend for NanovgBackend{
     		}
     	}
 
-        self.vg.stroke();
-        self.vg.fill();
+        if let Some(_) = path.get_stroke(){
+            self.vg.stroke();
+        }
+        if let Some(_) = path.get_fill(){
+            self.vg.fill();
+        }
     }
 }

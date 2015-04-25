@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::default::Default;
 use Backend;
 use Transform;
+use draw::AsPath;
 
 /// representing a position, can be returned as value form on_click for example
 #[derive(Clone, Debug, Default, Copy)]
@@ -42,8 +43,7 @@ pub trait Context{
 	}
 
 	/// draw a path
-	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
-			(&mut self, _: draw::Path<I,V>){}
+	fn draw_path<P:AsPath>(&mut self, _: P){}
 
 	/// get the current state
 	//fn state(&mut self) -> &Self::TWidget::State{unimplemented!()}
@@ -136,7 +136,7 @@ pub struct DrawContext<'a, D:Backend, W:Widget> where D:'a{
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT> DrawContext<'a, D, W>{
 	pub fn new(c: &'a mut Common<D>) -> DrawContext<'a, D, W>{
 		DrawContext{
-			transform: Transform::normal(),
+			transform: c.be.current_transform(),
 			c:c,
 			e: PhantomData,
 		}
@@ -156,8 +156,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 	fn hovered(&self) -> bool{
 		self.c.state.hovered == self.id()
 	}
-	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
-			(&mut self, path: draw::Path<I,V>){
+	fn draw_path<P:AsPath>(&mut self, path: P){
 		self.c.be.draw_path(path);
 	}
 
@@ -170,15 +169,17 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 	}
 
 	fn transform(&mut self, t:Transform){
-		self.transform.multiply(t);
-		self.c.be.transform(t);
-		println!("self: {:?} {:?}",t, self.transform+t);
-		println!("{:?}", self.c.be.current_transform());
+		self.c.be.set_transform(t*self.transform);
+	}
+	fn translate(&mut self, x: f32, y: f32){
+		let mut ct = self.transform;
+		ct.translate(x,y);
+		self.c.be.set_transform(ct);
+		//println!("{:?}", self.c.be.current_transform());
 	}
 
 	fn reset(&mut self){
-		self.c.be.transform(-self.transform);
-		self.transform = Transform::null();
+		self.c.be.set_transform(self.transform);
 	}
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
@@ -189,7 +190,6 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 			w.render(&mut c);
 			c.reset();
 		}
-
 		self.c.pop();
 	}
 	fn draw<F:Fn(&mut D)>(&mut self, f: F){

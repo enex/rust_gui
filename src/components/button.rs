@@ -27,9 +27,9 @@ pub enum ButtonEvent{
 #[derive(Debug, Clone)]
 pub struct Button<'a>{
     pub text: &'a str,
-    pub width: f64,
-    pub height: f64,
-    pub background_color: (f64, f64, f64),
+    pub width: f32,
+    pub height: f32,
+    pub background_color: (f32, f32, f32),
 }
 
 impl<'a> Default for Button<'a>{
@@ -44,10 +44,10 @@ impl<'a> Default for Button<'a>{
 }
 
 setter!(Button<'a>,
-    width: f64,
-    height: f64,
+    width: f32,
+    height: f32,
     text: &'a str,
-    background_color: (f64, f64, f64)
+    background_color: (f32, f32, f32)
 );
 
 impl<'a> Widget for Button<'a>{
@@ -58,8 +58,9 @@ impl<'a> Widget for Button<'a>{
         //let hovered = c.hovered();
         println!("draw_button  {:?}", self);
 
-        c.draw_path(Path::rect(0.,0.,100.,100.));
-
+        c.draw_path(Path::rect(0.,0.,self.width,self.height)
+            .stroke(1., Color::rgb(180,180,180)));
+        c.text(10., 10. ,self.text);
         c.on_click(|pos, h| {
             println!("Button !clicked at {:?}", pos);
             h.emit(ButtonEvent::Click);

@@ -23,7 +23,7 @@ impl Default for Icon{
 	fn default() -> Icon{
 		Icon{
 			icon: ' ',
-			size: 200.,
+			size: 16.,
 			color: Color::rgb(255,255,255),
 		}
 	}
@@ -34,17 +34,8 @@ impl Widget for Icon{
 	type State = ();
 
 	fn render<C:Context<TWidget=Icon>>(&self, c: &mut C) {
-		/*ctx.draw(|vg|{
-            vg.font_size(self.size);
-            vg.font_face("font-awesome");
-            vg.fill_color(self.color);
-            vg.text_align(LEFT|MIDDLE);
-			//vg.font_blur(self.font_blur);
-			let mut s = String::new();
-			s.push(self.icon);
-			vg.text(500.,500.,&s[0..]);
-        });*/
 		c.font_face("font-awesome");
+		c.draw(|be| be.font_size(self.size) );
 		let mut s = String::new();
 		s.push(self.icon);
 		c.text(10.,10., &s[..]);

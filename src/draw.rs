@@ -4,6 +4,7 @@ cases more efficient and simpler.
 */
 use std::fmt::{self, Debug};
 use primitives::Rect;
+use Color;
 
 //TODO: check num arguments in path macro
 #[macro_export]
@@ -90,6 +91,49 @@ impl PathInstr{
 	}
 }
 
+pub trait AsPath{
+	///path instructions neccessary to draw the path
+	fn instructions(&self) -> &[PathInstr];
+	/// values for the points in the path
+	fn values(&self) -> &[f32];
+
+	/// return a filled path
+	fn fill(self, color: Color) -> Filled<Self> where Self:Sized{
+		Filled{
+			p: self,
+			color: color,
+		}
+	}
+	/// return a stroked path
+	fn stroke(self, width: f32, color: Color) -> Stroked<Self> where Self:Sized{
+		Stroked{
+			p: self,
+			width: width,
+			color: color,
+		}
+	}
+
+	/// how the path is filled for rendering
+	fn get_fill(&self) -> Option<Color>{None}
+	/// how the path is stroked for rendering
+	fn get_stroke(&self) -> Option<(f32, Color)>{None}
+}
+impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> AsPath for (I, V){
+	fn instructions(&self) -> &[PathInstr]{
+		self.0.as_ref()
+	}
+	fn values(&self) -> &[f32]{
+		self.1.as_ref()
+	}
+}
+impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> AsPath for Path<I, V>{
+	fn instructions(&self) -> &[PathInstr]{
+		self.instr.as_ref()
+	}
+	fn values(&self) -> &[f32]{
+		self.vals.as_ref()
+	}
+}
 /// a structure containing all data for a path
 pub struct Path<I:AsRef<[PathInstr]>, V:AsRef<[f32]>>{
 	pub instr: I,
@@ -186,6 +230,64 @@ impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> Debug for Path<I, V>{
 		Ok(())
 	}
 }
+
+impl<I:AsRef<[PathInstr]>, V:AsRef<[f32]>> Path<I, V>{
+	/// fill the path with a givent thing, it is then a normal widget
+	pub fn fill() {
+
+	}
+
+	/// stroke the path
+	pub fn stroke() {
+
+	}
+}
+
+pub struct Filled<P>{
+	p: P,
+	pub color: Color,
+}
+impl<P:AsPath> AsPath for Filled<P>{
+	fn instructions(&self) -> &[PathInstr]{
+		self.p.instructions()
+	}
+	fn values(&self) -> &[f32]{
+		self.p.values()
+	}
+
+	/// how the path is filled for rendering
+	fn get_fill(&self) -> Option<Color>{
+		Some(self.color.clone())
+	}
+	/// how the path is stroked for rendering
+	fn get_stroke(&self) -> Option<(f32, Color)>{
+		self.p.get_stroke()
+	}
+}
+pub struct Stroked<P>{
+	p: P,
+	pub color: Color,
+	pub width: f32,
+}
+impl<P:AsPath> AsPath for Stroked<P>{
+	fn instructions(&self) -> &[PathInstr]{
+		self.p.instructions()
+	}
+	fn values(&self) -> &[f32]{
+		self.p.values()
+	}
+
+	/// how the path is filled for rendering
+	fn get_fill(&self) -> Option<Color>{
+		self.p.get_fill()
+	}
+	/// how the path is stroked for rendering
+	fn get_stroke(&self) -> Option<(f32, Color)>{
+		Some((self.width, self.color.clone()))
+	}
+}
+
+//TODO: fill and stoke with Patterns.
 
 #[test]
 fn test_paht_vec(){

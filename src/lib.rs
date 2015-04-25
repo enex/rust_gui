@@ -21,7 +21,7 @@ use state::State;
 use std::default::Default;
 use nanovg::Ctx;
 use nanovg_backend::NanovgBackend;
-use draw::{Path, PathInstr};
+use draw::{Path, PathInstr, AsPath};
 use std::any::Any;
 use context::StateT;
 use glutin::Event;
@@ -49,9 +49,10 @@ pub mod prelude{
 	pub use Widget;
 	pub use context::Context;
 	pub use components;
-	pub use draw::{Path, PathInstr};
+	pub use draw::{Path, PathInstr, AsPath};
 	pub use context::EventHandle;
 	pub use App;
+	pub use Color;
 }
 
 pub type ID = [u16;12];
@@ -62,24 +63,27 @@ pub type ID = [u16;12];
 /// Backend which should be implemented to support drawing operations
 /// the first backend will be cairo + OpenGL but other backends should follow
 pub trait Backend{
+	/// start drawing the path. The size of the Frame is provided.
+	fn begin(&mut self, _:i32, _:i32){}
+
 	/// load a font form a given path and make it available for later use
 	/// if it is called with the same font more than one time nothing
 	/// should happen
 	fn load_font(&mut self, &str, &str);
-
-	fn transform(&mut self, Transform);
-	fn current_transform(&self) -> Transform;
-
 	fn find_font(&self, name: &str) -> Option<Font>;
 	fn font_face(&mut self, font: &str);
-
+	fn font_size(&mut self, size: f32);
     fn text(&self, x: f32, y: f32, text: &str) -> f32;
 
-	/// start drawing the path. The size of the Frame is provided.
-	fn begin(&mut self, _:i32, _:i32){}
+	fn reset_transform(&mut self);
+	fn transform(&mut self, Transform);
+	fn set_transform(&mut self, t: Transform){
+		self.reset_transform();
+		self.transform(t);
+	}
+	fn current_transform(&self) -> Transform;
 
-	fn draw_path<I:AsRef<[draw::PathInstr]>, V:AsRef<[f32]>>
-		(&mut self, primitives::Path<I, V>);
+	fn draw_path<P:AsPath>(&mut self, P);
 
 	//drawing primitives
 	fn draw_line(&mut self, line: primitives::Line){
@@ -203,7 +207,13 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 		App{
 			root: root,
 			size: {
-				let (w, h) = window.get_inner_size().unwrap();
+				let (w, h) = match window.get_inner_size(){
+					Some(s) => s,
+					None => {
+						println!("was nat able to get inner sizer");
+						(0, 0)
+					}
+				};
 				(w as i32, h as i32)
 			},
 			data: Common{
@@ -236,28 +246,28 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 		self.data.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
 
 		while !self.window.is_closed() {
-			self.window.wait_events();
+			use glutin::Event::*;
 
-			for event in self.window.poll_events() {
-				use glutin::Event::*;
+			let event = match self.window.wait_events().next(){
+				Some(e) => e,
+				None => break
+			};
 
-				match event{
-					Event::Resized(w, h) => {//handle resizes
-						self.size.0 = w as i32;
-						self.size.1 = h as i32;
-						self.redraw = true;
-					},
-					Event::MouseInput(glutin::ElementState::Pressed, _) => {
-						//TODO: implement event handling
-						println!("mouse input");
-						let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);
-						self.root.render(&mut c);
-					},
-					_ => ()
-				}
-				//println!("{:?}", event);
+			match event{
+				Event::Resized(w, h) => {//handle resizes
+					self.size.0 = w as i32;
+					self.size.1 = h as i32;
+					self.redraw = true;
+				},
+				Event::MouseInput(glutin::ElementState::Pressed, _) => {
+					//TODO: implement event handling
+					println!("mouse input");
+					let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);
+					self.root.render(&mut c);
+				},
+				_ => ()
 			}
-
+			//println!("{:?}", event);
 			if self.redraw{
 				self.ps();
 				{
@@ -267,12 +277,12 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 				}
 				println!("draw ({}, {})", self.size.0, self.size.1);
 				self.redraw = false;
-			}
 
-			if self.begun{
-				self.data.be.end();
-				self.window.swap_buffers();
-				self.begun = false;
+				if self.begun{
+					self.data.be.end();
+					self.window.swap_buffers();
+					self.begun = false;
+				}
 			}
 		}
 	}
