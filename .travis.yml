@@ -3,6 +3,18 @@ install:
  - sudo apt-get install -qq --force-yes premake4
  - sudo apt-get install libXxf86vm-dev
 
+script:
+  - git clone https://github.com/glfw/glfw.git
+  - cd glfw
+  - git checkout 3.0.3
+  - cmake -DBUILD_SHARED_LIBS=ON .
+  - make
+  - sudo make install
+  - cd ..
+
+  - cargo build
+  - cargo test
+
 after_success:
  - |
    [ $TRAVIS_BRANCH = master ] &&
