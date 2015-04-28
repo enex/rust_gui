@@ -45,15 +45,12 @@ pub trait Context{
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, _: u16, _: &NW){}
 
 	/// add with event adds a component and listen to events fired from this component
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<Self::TWidget>)>(&mut self, id: u16, w: &NW, _:L){
+	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(&NW::Event, &mut EventHandle<Self::TWidget>)>(&mut self, id: u16, w: &NW, _:L){
 		self.add(id, w);
 	}
 
 	/// draw a path
 	fn draw_path<P:AsPath>(&mut self, _: P){}
-
-	/// get the current state
-	//fn state(&mut self) -> &Self::TWidget::State{unimplemented!()}
 
 	/// returns true if the element is currently focused, if not it returns false
 	fn focused(&self) -> bool;
@@ -225,9 +222,8 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 /// the event receiver
 pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
-	p: PhantomData<W>,
 	/// link to the parent context to emit events
-	emit: Option<()>,
+	emited: Vec<W::Event>,
 	transform: Transform,
 	//TODO: optionaly also emit to parent
 }
@@ -239,17 +235,14 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 		EventContext{
 			transform: Transform::normal(),
 			c: c,
-			p: PhantomData,
-			emit: None,
+			//p: PhantomData,
+			emited: Vec::new(),
 		}
 	}
 	/// wether the state of the component has changed, if it returns true the component
 	/// has to be redrawn
 	pub fn state_changed(&self) -> bool{
 		true
-	}
-	fn receive_event<E>(&mut self, e:E){
-		println!("receive Event");
 	}
 }
 
@@ -297,48 +290,36 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		}
 		self.c.pop();
 	}
-	//TODO: make mit correct by make EventHandle<W>
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<W>)>
+
+	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(&NW::Event, &mut EventHandle<W>)>
 		(&mut self, id: u16, w: &NW, f:L){
-		{
+		let emited = {
 			self.c.push(id);
 			println!("awe: {:?}  //event context", W::name());
 
 			let mut c:EventContext<D, NW> = EventContext{
 				transform: Transform::normal(),
 				c: self.c,
-				p: PhantomData,
-				emit: None,
+				//p: PhantomData,
+				emited: Vec::new(),
 			};
 			let d = Default::default();
 			w.render(&mut c, &d);
 			c.reset();
-		}
+			c.emited
+		};
 		self.c.pop();
+
+		println!("emited: {:?}", emited.len());
+		for e in emited.iter(){//call the event handler for each event
+			(f)(e, self);
+		}
 	}
 }
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'a, D, W>{
 	fn emit(&mut self, e: W::Event){
-		match self.emit{
-			Some(f) => (),//f.emit(e),
-			None => ()
-		}
+		println!("emit");
+		self.emited.push(e);
 	}
 }
-
-/*
-/// hack to use a trait object for error handling
-struct Emiter<F>{
-	f: F,
-	//h: &'a mut EventHandle<W>,
-}
-trait EEmi<E>{
-	fn emit(&mut self, E);
-}
-impl<W,Ev,F:Fn(Ev, &mut EventHandle<W>)> EEmi<Ev> for Emiter<F>{
-	fn emit(&mut self, e: Ev){
-		println!("emit the event");
-		//(self.f)(e, self.h)
-	}
-}*/

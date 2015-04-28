@@ -25,9 +25,10 @@ impl Widget for Task{
 		c.draw_path(path!(M:0,y-10.; L:500,(y-10.)).stroke(1., Color::rgb(120,120,120)));
 
 		c.translate(48., y);
-		c.add(1, Label::new(&self.desc[..]).font_size(17.));
+		Label::new(&self.desc[..]).font_size(17.).draw(c, 1);
 
-		let i = if self.done{
+		c.translate(8., y);
+		if self.done{
 			components::Icon{
 				icon: fa::check_circle_o,
 				..c.default()
@@ -37,16 +38,13 @@ impl Widget for Task{
 				icon: fa::circle_o,
 				..c.default()
 			}
-		};
-		c.translate(8., y);
-		c.add(2, &i);
+		}.draw(c, 2);
 
-		let i = components::Icon{
+		c.translate(468., y);
+		components::Icon{
 			icon: fa::remove,
 			..c.default()
-		};
-		c.translate(468., y);
-		c.add(3, &i);
+		}.draw(c, 3);
 	}
 }
 
@@ -118,7 +116,7 @@ impl Widget for TodoApp{
 			.stroke(2., Color::rgb(160,160,160))
 			.fill(Color::rgb(0,0,0)));//just a line for separation
 
-		let pd = Button{
+		let pd = Button{ //prototype button for the following buttons
 			height: 24.,
 			width: 36.,
 			..c.default()
@@ -134,18 +132,18 @@ impl Widget for TodoApp{
 
 		//TODO: highlight current tab
 		c.translate(148., 470.);
-		c.add(2, &Button{
+		c.awe(2, &Button{
 			text: "All",
 			background_color: bgc(Tab::All, s.tab),
 			..pd.clone()
-		});
+		}, |e, _| println!("All {:?}", e));
 
 		c.translate(190., 470.);
-		c.add(3, &Button{
+		c.awe(3, &Button{
 			width: 60.,
 			background_color: bgc(Tab::Active, s.tab),
 			text: "Active", ..pd.clone()
-		});
+		}, |e, _| println!("Active {:?}", e));
 
 		c.translate(256., 470.);
 		c.awe(4, &Button{

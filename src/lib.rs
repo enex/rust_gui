@@ -186,22 +186,12 @@ pub trait Widget{
 
 	/// the name of the widget, this is optional and for debuging
 	fn name() -> &'static str{""}
+
+	/// function to add a widget to the context.
+	fn draw<C:Context>(&self, c: &mut C, id: u16) where Self: Widget+Sized{
+		c.add(id, self)
+	}
 }
-
-/*
-impl<'a, W:Widget<State=S>, S:Any+Default> Widget for &'a W{
-	type State = W::State;
-	type Event = W::Event;
-
-	fn render<C:Context<TWidget=W>>(&self, ctx: &mut C){
-		self.render(ctx)
-	}
-	fn size(&self) -> (f64, f64) {
-		self.size()
-	}
-	fn init(){W::name()}
-	fn name() -> &'static str{W::name()}
-}*/
 
 /// evaluate the expression, then check for GL error.
 macro_rules! glcheck {
@@ -314,3 +304,17 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 		}
 	}
 }
+
+/*
+Idea
+
+Button::new("bla").fill(Color::blue()).text("Hello World").draw(c, 10)
+//vs
+Button{
+	fill: Some(Color::blue()),
+	text: "Hello World",
+	..c.default()
+}.draw(c, 10)
+//vs
+c.add(10, Button::new("bla").fill(Color::blue()).text("Hello World"))
+*/
