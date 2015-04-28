@@ -1,6 +1,5 @@
 language: rust
 install:
- #- sudo apt-get install -qq rust-nightly cargo
  - sudo apt-get install -qq --force-yes premake4
  - sudo apt-get install libXxf86vm-dev
 

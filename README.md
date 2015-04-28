@@ -1,7 +1,7 @@
-# GUI for Rust
+# GUI for Rust [![Build Status](https://travis-ci.org/enex/rust_gui.svg?branch=master)](https://travis-ci.org/enex/rust_gui)
 
 Little an simple gui library for [Rust](http://www.rust-lang.org/) inspired by react.
-gui and uses [nanovg](https://github.com/enex/nanovg-rs) as default backend library for rendering.
+gui and uses [nanovg](https://github.com/enex/nanovg-rs) as default backend library for rendering. More information can be found in the [docs](https://enex.github.io/rust_gui).
 
 Everything should be abstracted into the widget api including all drawing-operations.
 This allows to switch the backend without changing the api. Aditionaly it simplifyes
