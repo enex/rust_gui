@@ -44,6 +44,9 @@ impl Backend for NanovgBackend{
     fn font_size(&mut self, size: f32){
         self.vg.font_size(size)
     }
+    fn font_color(&mut self, color: Color){
+        self.vg.fill_color(color);
+    }
 
     fn text(&self, x: f32, y: f32, text: &str) -> f32{
         self.vg.text(x,y,text)

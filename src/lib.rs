@@ -17,6 +17,7 @@ pub use context::{Context, DrawContext, EventContext, Common};
 pub use nanovg::{Color, Font};
 pub use transform::Transform;
 
+use std::fmt;
 use state::State;
 use std::default::Default;
 use nanovg::Ctx;
@@ -50,12 +51,35 @@ pub mod prelude{
 	pub use context::Context;
 	pub use components;
 	pub use draw::{Path, PathInstr, AsPath};
-	pub use context::EventHandle;
+	pub use context::{EventHandle, StateT};
 	pub use App;
 	pub use Color;
 }
 
-pub type ID = [u16;12];
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ID (pub [u16;12]);
+impl fmt::Debug for ID{
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+		let mut first = true;
+		try!(write!(f,"$"));
+		for i in self.0.iter(){
+			if *i == 0{
+				break;
+			}
+			if !first{
+				try!(write!(f,"-"));
+			}
+			try!(write!(f, "{}", i));
+			first = false;
+		}
+		Ok(())
+	}
+}
+impl ID{
+	fn null() -> ID{
+		ID([0;12])
+	}
+}
 
 //TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
@@ -73,6 +97,7 @@ pub trait Backend{
 	fn find_font(&self, name: &str) -> Option<Font>;
 	fn font_face(&mut self, font: &str);
 	fn font_size(&mut self, size: f32);
+	fn font_color(&mut self, color: Color);
     fn text(&self, x: f32, y: f32, text: &str) -> f32;
 
 	fn reset_transform(&mut self);
@@ -145,7 +170,7 @@ pub trait Widget{
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
 	/// able to change anything.
 	/// It returns the (width, hight) of the area affected by the render method
-	fn render<C:Context<TWidget=Self>>(&self, ctx: &mut C);
+	fn render<C:Context<TWidget=Self>>(&self, ctx: &mut C, s: &Self::State);
 
 	/// Method which is used by the layout engine to get the size of a component
 	/// by default the size will be calculated by using the render function with
@@ -224,8 +249,9 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 				},
 				state: State::new(),
 				depth: 0,
-				id: [0; 12],
+				id: ID::null(),
 				transform: Transform::normal(),
+				listeners: Vec::new(),
 			},
 			window: window,
 			begun: false,
@@ -239,8 +265,9 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 		self.begun = true;
 	}
 
-	/// start the application
-	pub fn show(&mut self){
+	/// start the application with a reference to the state, this will be passed
+	/// to the render function of the root component
+	pub fn show(&mut self, state: &S){
 		self.data.be.load_font("sans", "res/Roboto-Regular.ttf");
 		self.data.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
 		self.data.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
@@ -263,7 +290,7 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 					//TODO: implement event handling
 					println!("mouse input");
 					let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);
-					self.root.render(&mut c);
+					self.root.render(&mut c, state);
 				},
 				_ => ()
 			}
@@ -273,7 +300,7 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 				{
 					let mut c:DrawContext<NanovgBackend, W> =
 						DrawContext::new(&mut self.data);
-					self.root.render(&mut c);
+					self.root.render(&mut c, state);
 				}
 				println!("draw ({}, {})", self.size.0, self.size.1);
 				self.redraw = false;

@@ -34,7 +34,7 @@ impl Widget for Icon{
 	type Event = ();
 	type State = ();
 
-	fn render<C:Context<TWidget=Icon>>(&self, c: &mut C) {
+	fn render<C:Context<TWidget=Icon>>(&self, c: &mut C, _: &()) {
 		c.font_face("font-awesome");
 		c.draw(|be| be.font_size(self.size) );
 		let mut s = String::new();

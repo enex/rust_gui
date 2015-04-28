@@ -21,10 +21,17 @@ pub trait StateT: Any + Default{}
 impl<A:Any + Default> StateT for A{}
 
 /// this trait object is passed to a event hanling function to handle the event
-pub trait EventHandle<W:Widget>{
+pub trait EventHandle<W:Widget> where W::State:Any+Default{
 	/// emit a event of the specified event type that will then be propagated to the
 	/// Widget which added this Widget
 	fn emit(&mut self, e: W::Event);
+	fn state(&self, f: &Fn(&W::State)){
+		(f)(&Default::default())
+	}
+	fn mut_state(&self, f: &Fn(&mut W::State)){
+		let mut d = Default::default();
+		(f)(&mut d)
+	}
 }
 
 /// context which the programmer uses to add widgets or to draw someting or to acces
@@ -38,7 +45,7 @@ pub trait Context{
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, _: u16, _: &NW){}
 
 	/// add with event adds a component and listen to events fired from this component
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>(&mut self, id: u16, w: &NW, _:L){
+	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<Self::TWidget>)>(&mut self, id: u16, w: &NW, _:L){
 		self.add(id, w);
 	}
 
@@ -63,10 +70,7 @@ pub trait Context{
 
 	/// translate the context so the following Widgets beeing drawn are positioned
 	/// after the new origin givent. This is relativ to the own origin.
-	fn translate(&mut self, x:f32, y:f32){
-		let t = Transform::translated(x,y);
-		self.transform(t);
-	}
+	fn translate(&mut self, x:f32, y:f32){}
 
 	fn scale(&mut self, x:f32, y:f32){
 		unimplemented!()
@@ -93,7 +97,13 @@ pub trait Context{
 	/// # event listeners
 
 	/// register event listener for click event
-	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self, _: F){}
+	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self, _:f32, _:f32, _:f32, _:f32, _: F){}
+}
+
+#[derive(Debug, Clone)]
+pub enum EventFilter{
+	/// a mouse event in the area specified
+	Mouse(f32, f32, f32, f32)
 }
 
 /// data shared betwen contexts D:Backend the backend
@@ -108,11 +118,13 @@ pub struct Common<D:Backend>{
 	pub be: D,
 	/// the global Transformation
 	pub transform: Transform,
+	/// event listeners
+	pub listeners: Vec<(ID,EventFilter)>,
 }
 
 impl<D:Backend> Common<D>{
 	fn push(&mut self, id: u16){
-		self.id[self.depth as usize] = id;
+		self.id.0[self.depth as usize] = id;
 		self.depth += 1;
 		if self.depth > 12{
 			panic!("id is to big, to much nesting used.");
@@ -120,7 +132,7 @@ impl<D:Backend> Common<D>{
 	}
 	fn pop(&mut self){
 		self.depth -= 1;
-		self.id[self.depth as usize] = 0;
+		self.id.0[self.depth as usize] = 0;
 	}
 }
 
@@ -187,13 +199,21 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 
 			//println!("add: {:?} as {:?}", NW::name(), nid);
 			let mut c:DrawContext<D, NW> = DrawContext::new(self.c);
-			w.render(&mut c);
+			let d = Default::default();
+			w.render(&mut c, &d);
 			c.reset();
 		}
 		self.c.pop();
 	}
 	fn draw<F:Fn(&mut D)>(&mut self, f: F){
 		(f)(&mut self.c.be)
+	}
+
+	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self,x:f32,y:f32,w:f32,h:f32, _: F){
+		let p = self.transform.point(x,y);
+		//TODO: remove unused event listeners
+		self.c.listeners.push((self.c.id, EventFilter::Mouse(p.0,p.1,w,h)));
+		//println!("register event listener {:?} {:?} {:?}", self.c.id,((x,y), (w,h)), p);
 	}
 }
 
@@ -206,7 +226,8 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
 	p: PhantomData<W>,
-	emit: Option<&'a Fn(W::Event, &mut EventHandle<W>)>,
+	/// link to the parent context to emit events
+	emit: Option<()>,
 	transform: Transform,
 	//TODO: optionaly also emit to parent
 }
@@ -227,13 +248,16 @@ impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 	pub fn state_changed(&self) -> bool{
 		true
 	}
+	fn receive_event<E>(&mut self, e:E){
+		println!("receive Event");
+	}
 }
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W>{
 	type TWidget = W;
 	type Backend = D;
 
-	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self, f: F){
+	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self,x1:f32,y1:f32,x2:f32,y2:f32, f: F){
 		//use EventContext itsselve as EventHandle
 		let s:&mut EventHandle<W> = self;
 		(f)(Pos{x:10.,y:10.}, s);
@@ -248,26 +272,33 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 	fn hovered(&self) -> bool{
 		self.c.state.hovered == self.id()
 	}
+
 	fn transform(&mut self, t:Transform){
-		self.transform = self.transform + t;
-		self.c.be.transform(t);
+		self.c.be.set_transform(t*self.transform);
+	}
+	fn translate(&mut self, x: f32, y: f32){
+		let mut ct = self.transform;
+		ct.translate(x,y);
+		self.c.be.set_transform(ct);
+		//println!("{:?}", self.c.be.current_transform());
 	}
 	fn reset(&mut self){
-		self.c.be.transform(self.transform);
+		self.c.be.set_transform(self.transform);
 	}
+
 	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
 		{
 			self.c.push(id);
 
 			let mut c:EventContext<D, NW> = EventContext::new(self.c);
-
-			w.render(&mut c);
+			let d = Default::default();
+			w.render(&mut c, &d);
 			c.reset();
 		}
 		self.c.pop();
 	}
 	//TODO: make mit correct by make EventHandle<W>
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<NW>)>
+	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(NW::Event, &mut EventHandle<W>)>
 		(&mut self, id: u16, w: &NW, f:L){
 		{
 			self.c.push(id);
@@ -277,23 +308,20 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 				transform: Transform::normal(),
 				c: self.c,
 				p: PhantomData,
-				emit: Some(&f),
+				emit: None,
 			};
-
-			w.render(&mut c);
+			let d = Default::default();
+			w.render(&mut c, &d);
 			c.reset();
 		}
 		self.c.pop();
 	}
-	/*fn draw<F:Fn(&mut D)>(&self, f: F){
-		(f)(&mut self.c.be)
-	}*/
 }
 
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'a, D, W>{
 	fn emit(&mut self, e: W::Event){
 		match self.emit{
-			Some(f) => (f)(e, self),
+			Some(f) => (),//f.emit(e),
 			None => ()
 		}
 	}
@@ -301,17 +329,16 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'
 
 /*
 /// hack to use a trait object for error handling
-struct Emiter<'a, Ev, W:Widget>{
-	f: &'a Fn(Ev, &mut EventHandle<W>),
+struct Emiter<F>{
+	f: F,
+	//h: &'a mut EventHandle<W>,
 }
 trait EEmi<E>{
-	fn emit(&self, E);
+	fn emit(&mut self, E);
 }
-impl<'a, Ev, W:Widget<State=S>, S:StateT> EEmi<Ev> for Emiter<'a, Ev, W>{
-	fn emit(&self, e: Ev){
+impl<W,Ev,F:Fn(Ev, &mut EventHandle<W>)> EEmi<Ev> for Emiter<F>{
+	fn emit(&mut self, e: Ev){
 		println!("emit the event");
-		//let mut eh:EventHandle<W> = EventHandle::new(&self.id, &mut state);
-		(self.f)(e, &mut eh)
-		//TODO: implement calling correctly and create EventHandle
+		//(self.f)(e, self.h)
 	}
 }*/

@@ -14,8 +14,20 @@ pub enum ButtonEvent{
     Leave
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ButtonState{
+    Hovered,
+    Presse,
+    None
+}
+impl Default for ButtonState{
+    fn default() -> ButtonState{
+        ButtonState::None
+    }
+}
+
 /// A simple button component
-/// 
+///
 /// ![all_widgets example](https://raw.githubusercontent.com/enex/rust_gui/master/button.png)
 /// # Usage:
 ///
@@ -56,14 +68,21 @@ setter!(Button<'a>,
 
 impl<'a> Widget for Button<'a>{
     type Event = ButtonEvent;
-    type State = ();
+    type State = ButtonState;
 
-    fn render<C: Context<TWidget=Button<'a>>>(&self, c: &mut C) {
+    fn render<C: Context<TWidget=Button<'a>>>(&self, c: &mut C, s: &ButtonState) {
         //let hovered = c.hovered();
         println!("draw_button  {:?}", self);
 
-        c.draw_path(Path::rect(0.,0.,self.width,self.height)
-            .stroke(1., Color::rgb(180,180,180)));
+        let p = Path::rect(0.,0.,self.width,self.height)
+            .stroke(1., Color::rgb(180,180,180));
+
+        if let Some(ref bc) = self.background_color{
+            c.draw_path(p.fill(bc.clone()));
+        } else {
+            c.draw_path(p);
+        }
+
         c.translate(2., 8.);
         let l = Label{
             text: self.text,
@@ -71,7 +90,7 @@ impl<'a> Widget for Button<'a>{
             ..c.default()
         };
         c.add(1, &l);
-        c.on_click(|pos, h| {
+        c.on_click(0.,0.,self.width,self.height,|pos, h| {
             println!("Button !clicked at {:?}", pos);
             h.emit(ButtonEvent::Click);
         });

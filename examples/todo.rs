@@ -1,13 +1,12 @@
 #[macro_use] extern crate rui;
 extern crate glutin;
 
-use std::collections::LinkedList;
 use rui::prelude::*;
 use rui::components::*;
 
 // this is the model which will be rendered
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Task{
 	/// a index to uniquely identify this Task
 	pub index: usize,
@@ -21,12 +20,12 @@ impl Widget for Task{
 	type State = ();
 	type Event = ();
 
-	fn render<C:Context>(&self, c: &mut C){
+	fn render<C:Context>(&self, c: &mut C, _:&()){
 		let y = (self.index as f32)*30. + 10.;
 		c.draw_path(path!(M:0,y-10.; L:500,(y-10.)).stroke(1., Color::rgb(120,120,120)));
 
-		c.font_face("sans");
-		c.text(48., y + 10., &self.desc[..]);
+		c.translate(48., y);
+		c.add(1, Label::new(&self.desc[..]).font_size(17.));
 
 		let i = if self.done{
 			components::Icon{
@@ -40,30 +39,40 @@ impl Widget for Task{
 			}
 		};
 		c.translate(8., y);
-		c.add(1, &i);
+		c.add(2, &i);
 
 		let i = components::Icon{
 			icon: fa::remove,
 			..c.default()
 		};
 		c.translate(468., y);
-		c.add(2, &i);
-		//ctx.add(1, Label::new(&self.desc[0..]).font_size(16.0));
+		c.add(3, &i);
 	}
 }
 
-#[derive(Debug)]
-pub struct TodoApp{
-	///All Tasks
-	pub tasks: LinkedList<Task>,
-	next_id: usize,
-	///value for the task going to be inserted
-	pub input: String,
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+enum Tab{
+    All,
+	Active,
+	Completed,
 }
-impl TodoApp{
-	fn new() -> TodoApp{
-		TodoApp{
-			tasks: LinkedList::new(),
+impl Default for Tab{
+	fn default() -> Tab{
+		Tab::All
+	}
+}
+#[derive(Debug, Clone, Default)]
+pub struct AppState{
+	tab: Tab,
+	tasks: Vec<Task>,
+	input: String,
+	next_id: usize,
+}
+impl AppState{
+	fn new() -> AppState{
+		AppState{
+			tab: Default::default(),
+			tasks: Vec::new(),
 			input: String::new(),
 			next_id: 0,
 		}
@@ -77,44 +86,78 @@ impl TodoApp{
 	/// append a new task to the todo list
 	fn append_item(&mut self, desc: &str){
 		let id = self.next_id();
-		self.tasks.push_back(Task{
+		self.tasks.push(Task{
 			done: false,
 			desc: desc.to_string(),
 			index: id,
 		});
 	}
 }
+
+pub struct TodoApp;
 impl Widget for TodoApp{
-	type State = ();
+	type State = AppState;
 	type Event = ();
 
-	fn render<C:Context>(&self, c: &mut C){
-		c.add(1, &Label::new("What needs to be done?"));
-		//c.add(1, Label::new("test-label").font_size(100.0).font_face("Arial"));
+	fn render<C:Context>(&self, c: &mut C, s: &AppState){
+		c.translate(48., 14.);
+		c.add(1, Label::new("What needs to be done?")
+			.font_size(22.)
+			.color(Color::rgb(150,150,150)));
+
 		let mut i = 20;
 		c.translate(0., 40.);
-		for task in self.tasks.iter(){
+
+		for task in s.tasks.iter(){
 			c.add(i, task);
 			i += 1;
 		}
+
 		c.reset();
 		c.draw_path(Path::rect(0.,460., 500.,500.)
 			.stroke(2., Color::rgb(160,160,160))
 			.fill(Color::rgb(0,0,0)));//just a line for separation
-		let mut d = Button{
-			text: "All",
+
+		let pd = Button{
 			height: 24.,
-			width: 32.,
+			width: 36.,
 			..c.default()
 		};
-		c.translate(100., 470.);
-		c.add(2, &d);
-		d.text = "Active";
-		c.add(3, &d);
-		c.translate(200., 470.);
-		d.text = "Completed";
-		c.translate(380., 470.);
-		c.add(4, &d);
+
+		fn bgc(e: Tab,v: Tab) -> Option<Color>{
+			if e == v{
+				Some(Color::rgb(40,40,40))
+			}else{
+				None
+			}
+		}
+
+		//TODO: highlight current tab
+		c.translate(148., 470.);
+		c.add(2, &Button{
+			text: "All",
+			background_color: bgc(Tab::All, s.tab),
+			..pd.clone()
+		});
+
+		c.translate(190., 470.);
+		c.add(3, &Button{
+			width: 60.,
+			background_color: bgc(Tab::Active, s.tab),
+			text: "Active", ..pd.clone()
+		});
+
+		c.translate(256., 470.);
+		c.awe(4, &Button{
+			text: "Completed",
+			width: 90.,
+			background_color: bgc(Tab::Completed, s.tab),
+			..pd.clone()
+		}, |e, _| println!("Completed {:?}", e));
+
+		c.translate(10., 478.);
+		c.add(5, Label::new(&format!("{} items", s.tasks.len())[..])
+			.font_size(14.));
 		//TODO: render buttons for view
 		//TODO: render clear if task is ready
 		//TODO: render remaining tasks
@@ -122,12 +165,12 @@ impl Widget for TodoApp{
 }
 
 fn main(){
-	let mut ta = TodoApp::new();
-	ta.append_item("contribute");
-	ta.append_item("start experimenting");
-	ta.append_item("share the library");
+	let mut state = AppState::new();
+	state.append_item("contribute");
+	state.append_item("start experimenting");
+	state.append_item("share the library");
 	for i in 1..15{
-		ta.append_item(&format!("{:?}. Element", i)[..])
+		state.append_item(&format!("{:?}. Element", i)[..])
 	}
 
 	let window = glutin::WindowBuilder::new()
@@ -142,5 +185,5 @@ fn main(){
 
 	unsafe { window.make_current() };//make it active
 
-	App::new(window, ta).show();
+	App::new(window, TodoApp).show(&state);
 }

@@ -47,19 +47,12 @@ impl<'a> Widget for Label<'a>{
     type Event = ();
     type State = ();
 
-    fn render<C:Context<TWidget=Label<'a>>>(&self, c: &mut C) {
+    fn render<C:Context<TWidget=Label<'a>>>(&self, c: &mut C, _: &()) {
         c.font_face(self.font_face);
-        c.draw(|be| be.font_size(self.font_size) );
+        c.draw(|be|{
+            be.font_size(self.font_size);
+            be.font_color(self.color.clone());
+        });
         c.text(self.font_size*0.3,self.font_size*0.5,self.text);
-        //c.font_size(self.font_size);
-
-        /*ctx.draw(|vg|{
-            vg.font_size(self.font_size);
-            vg.font_face(self.font_face);
-            vg.fill_color(self.color);
-            vg.text_align(LEFT|MIDDLE);
-			vg.font_blur(self.font_blur);
-			vg.text(self.font_size*0.3,self.font_size*0.5,self.text);
-        });*/
     }
 }

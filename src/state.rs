@@ -70,8 +70,8 @@ impl State{
 impl Default for State{
 	fn default() -> State{
 		State{
-            focused: [0; 12],
-            hovered: [0; 12],
+            focused: ID::null(),
+            hovered: ID::null(),
             state: BTreeMap::new(),
             listeners: Vec::new(),
         }
@@ -79,9 +79,9 @@ impl Default for State{
 }
 
 fn max_id(id: &ID) -> ID{
-	let mut e: ID = [65535;12];
+	let mut e = [65535;12];
 	let mut i = 0;
-	for &v in id.iter(){
+	for &v in id.0.iter(){
 		if v == 0{
 			break;
 		}
@@ -89,7 +89,7 @@ fn max_id(id: &ID) -> ID{
 		//println!("i:{}, v: {}",i,v);
 		i+=1;
 	};
-	e
+	ID(e)
 }
 #[test]
 fn test_max_id(){

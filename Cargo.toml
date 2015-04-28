@@ -7,13 +7,17 @@ authors = ["enex <sive@web.de>"]
 keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cairo", "2d", "visual", "vector"]
 readme = "README.md"
 homepage = "https://github.com/enex/rust-gui"
-description = "react rust ui  a ReactJS like UI library"
+description = "reactiv rust ui  a ReactJS like UI library"
 
-[dependencies.glutin]
-git = "https://github.com/tomaka/glutin"
+[dependencies]
+glutin = "0.0.26"
+gl = "0.0.12"
+
+#[dependencies.glutin]
+#git = "https://github.com/tomaka/glutin"
 
 [dependencies.nanovg]
 git="https://github.com/enex/nanovg-rs"
 
-[dependencies.gl]
-git = "https://github.com/bjz/gl-rs"
+#[dependencies.gl]
+#git = "https://github.com/bjz/gl-rs"
