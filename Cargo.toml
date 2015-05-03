@@ -3,7 +3,6 @@ name = "rui"
 version = "0.0.1"
 repository = "https://github.com/enex/rust_gui.git"
 license = "LGPL-3.0"
-license = "LGPL"
 authors = ["enex <sive@web.de>"]
 keywords = ["graphics", "ui", "2d"]
 readme = "README.md"
@@ -14,7 +13,3 @@ description = "reactiv rust ui  a ReactJS like UI library"
 glutin = "*"
 gl = "*"
 nanovg = "*"
-
-[dependencies.nanovg]
-git = "https://github.com/enex/nanovg-rs.git"
-version = "0.2.0"
