@@ -10,8 +10,8 @@ homepage = "https://github.com/enex/rust-gui"
 description = "reactiv rust ui  a ReactJS like UI library"
 
 [dependencies]
-glutin = "0.0.26"
-gl = "0.0.12"
+glutin = "*"
+gl = "*"
 
 #[dependencies.glutin]
 #git = "https://github.com/tomaka/glutin"
