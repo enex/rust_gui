@@ -1,22 +1,18 @@
 language: rust
+
+os:
+- linux
+- osx
+
 install:
- - sudo apt-get install -qq --force-yes premake4
- - sudo apt-get install libXxf86vm-dev
+- sudo apt-get install libXxf86vm-dev libosmesa6-dev
 
 script:
-  - git clone https://github.com/glfw/glfw.git
-  - cd glfw
-  - git checkout 3.0.3
-  - cmake -DBUILD_SHARED_LIBS=ON .
-  - make
-  - sudo make install
-  - cd ..
+- cargo build --verbose
+- cargo test --verbose
+- cargo doc --verbose
 
-  - cargo build
-  - cargo test
-
-after_success:
- - |
+after_success: |
    [ $TRAVIS_BRANCH = master ] &&
    [ $TRAVIS_PULL_REQUEST = false ] &&
    cargo doc &&

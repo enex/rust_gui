@@ -1,6 +1,6 @@
 [package]
 name = "rui"
-version = "0.0.0"
+version = "0.0.1"
 repository = "https://github.com/enex/rust-gui.git"
 license = "LGPL"
 authors = ["enex <sive@web.de>"]
@@ -14,4 +14,5 @@ glutin = "*"
 gl = "*"
 
 [dependencies.nanovg]
-git="https://github.com/enex/nanovg-rs"
+git = "https://github.com/enex/nanovg-rs.git"
+version = "0.2.0"
