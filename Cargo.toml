@@ -1,12 +1,12 @@
 [package]
 name = "rui"
 version = "0.0.1"
-repository = "https://github.com/enex/rust-gui.git"
+repository = "https://github.com/enex/rust_gui.git"
 license = "LGPL"
 authors = ["enex <sive@web.de>"]
 keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cairo", "2d", "visual", "vector"]
 readme = "README.md"
-homepage = "https://github.com/enex/rust-gui"
+homepage = "https://github.com/enex/rust_gui"
 description = "reactiv rust ui  a ReactJS like UI library"
 
 [dependencies]
