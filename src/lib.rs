@@ -310,7 +310,7 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					}
 				},
 				Refresh => { self.redraw = true; },
-				//_ => ()
+				_ => ()
 			}
 			
 			self.data.be.reset_transform();

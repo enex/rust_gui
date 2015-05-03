@@ -1,18 +1,15 @@
 [package]
 name = "rui"
 version = "0.0.1"
-repository = "https://github.com/enex/rust-gui.git"
-license = "LGPL"
+repository = "https://github.com/enex/rust_gui.git"
+license = "LGPL-3.0"
 authors = ["enex <sive@web.de>"]
-keywords = ["SDL", "window", "graphics", "gui", "react", "dataflow", "ui", "cairo", "2d", "visual", "vector"]
+keywords = ["graphics", "ui", "2d"]
 readme = "README.md"
-homepage = "https://github.com/enex/rust-gui"
+homepage = "https://github.com/enex/rust_gui"
 description = "reactiv rust ui  a ReactJS like UI library"
 
 [dependencies]
 glutin = "*"
 gl = "*"
-
-[dependencies.nanovg]
-git = "https://github.com/enex/nanovg-rs.git"
-version = "0.2.0"
+nanovg = "*"
