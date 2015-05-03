@@ -208,7 +208,9 @@ pub trait UIState<E>: StateT{
 	/// handle a event emited from the root component
 	fn handle(&mut self, e: E);
 }
-
+impl UIState<()> for (){
+	fn handle(&mut self, _:()){}
+}
 /// Trait possibly used for the context to add widgets, could abstract
 /// transformation
 pub trait Adder<T>{
@@ -307,7 +309,8 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 						self.redraw = true;
 					}
 				},
-				_ => ()
+				Refresh => { self.redraw = true; },
+				//_ => ()
 			}
 			
 			self.data.be.reset_transform();

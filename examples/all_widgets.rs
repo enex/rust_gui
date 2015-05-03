@@ -9,7 +9,7 @@ impl Widget for MyApp{
 	type Event = ();
 	type State = ();
 
-	fn render<C:Context>(&self, c: &mut C){
+	fn render<C:Context<TWidget=MyApp>>(&self, c: &mut C, _: &()){
 		c.translate(200.,100.,);
 		c.draw_path(path!(M:10,10; L:200,200; L:300,200; L:500,400; Z:));
 		c.reset();
@@ -44,5 +44,5 @@ fn main(){
 
 	unsafe { window.make_current() };//make it active
 
-	App::new(window, MyApp).show();
+	App::new(window, MyApp).show(&mut ());
 }

@@ -91,6 +91,7 @@ fn max_id(id: &ID) -> ID{
 	};
 	ID(e)
 }
+/*
 #[test]
 fn test_max_id(){
 	assert_eq!(max_id(&[1,0,0,0,0,0,0,0,0,0,0,0]), [1,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535]);
@@ -114,7 +115,7 @@ fn test_state(){
 	assert_eq!(s.state.len(), 8);
 	s.remove_c(&[1,1,0,0,0,0,0,0,0,0,0,0]);
 	assert_eq!(s.state.len(), 3);
-}
+}*/
 
 /// An extension of `AnyRefExt` allowing unchecked downcasting of trait objects to `&T`.
 pub trait UncheckedAnyRefExt<'a> {

@@ -13,11 +13,5 @@ description = "reactiv rust ui  a ReactJS like UI library"
 glutin = "*"
 gl = "*"
 
-#[dependencies.glutin]
-#git = "https://github.com/tomaka/glutin"
-
 [dependencies.nanovg]
 git="https://github.com/enex/nanovg-rs"
-
-#[dependencies.gl]
-#git = "https://github.com/bjz/gl-rs"
