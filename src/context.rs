@@ -8,6 +8,7 @@ use std::default::Default;
 use Backend;
 use Transform;
 use draw::AsPath;
+use glutin::Event;
 
 /// representing a position, can be returned as value form on_click for example
 #[derive(Clone, Debug, Default, Copy)]
@@ -21,16 +22,17 @@ pub trait StateT: Any + Default{}
 impl<A:Any + Default> StateT for A{}
 
 /// this trait object is passed to a event hanling function to handle the event
-pub trait EventHandle<W:Widget> where W::State:Any+Default{
+pub trait EventHandle<W:Widget> where W::State: Any+Default{
 	/// emit a event of the specified event type that will then be propagated to the
 	/// Widget which added this Widget
 	fn emit(&mut self, e: W::Event);
-	fn state(&self, f: &Fn(&W::State)){
-		(f)(&Default::default())
+
+	fn mut_state<'a>(&mut self) -> &'a mut W::State {
+		unimplemented!()
 	}
-	fn mut_state(&self, f: &Fn(&mut W::State)){
-		let mut d = Default::default();
-		(f)(&mut d)
+	/// shortcut for mut_state
+	fn ms<'a>(&mut self) -> &'a mut W::State{
+		self.mut_state()
 	}
 }
 
@@ -42,10 +44,10 @@ pub trait Context{
 	type Backend: Backend;
 
 	/// add a component
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, _: u16, _: &NW){}
+	fn add<NW:Widget>(&mut self, _: u16, _: &NW) where NW::State: StateT{}
 
 	/// add with event adds a component and listen to events fired from this component
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(&NW::Event, &mut EventHandle<Self::TWidget>)>(&mut self, id: u16, w: &NW, _:L){
+	fn awe<NW:Widget,L:Fn(&NW::Event, &mut EventHandle<Self::TWidget>)>(&mut self, id: u16, w: &NW, _:L) where NW::State: StateT{
 		self.add(id, w);
 	}
 
@@ -69,10 +71,6 @@ pub trait Context{
 	/// after the new origin givent. This is relativ to the own origin.
 	fn translate(&mut self, x:f32, y:f32){}
 
-	fn scale(&mut self, x:f32, y:f32){
-		unimplemented!()
-	}
-
 	/// apply a transformation to the context
 	fn transform(&mut self, Transform);
 	/// resets all transformations done in this context.
@@ -94,7 +92,8 @@ pub trait Context{
 	/// # event listeners
 
 	/// register event listener for click event
-	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>(&mut self, _:f32, _:f32, _:f32, _:f32, _: F){}
+	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>
+		(&mut self, _:f32, _:f32, _:f32, _:f32, _: F){}
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +116,14 @@ pub struct Common<D:Backend>{
 	pub transform: Transform,
 	/// event listeners
 	pub listeners: Vec<(ID,EventFilter)>,
+	/// the event thrown
+	pub event: Event,
+	/// the widgets affected this will be generated based on listeners
+	pub affected: Vec<ID>,
+	/// widgets that should be redrawn
+	pub redraw: Vec<ID>,
+	/// the current mouse positon
+	pub mouse_pos: (f32, f32),
 }
 
 impl<D:Backend> Common<D>{
@@ -181,16 +188,14 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 		self.c.be.set_transform(t*self.transform);
 	}
 	fn translate(&mut self, x: f32, y: f32){
-		let mut ct = self.transform;
-		ct.translate(x,y);
-		self.c.be.set_transform(ct);
+		self.c.be.set_transform(self.transform.translate(x,y));
 		//println!("{:?}", self.c.be.current_transform());
 	}
 
 	fn reset(&mut self){
 		self.c.be.set_transform(self.transform);
 	}
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
+	fn add<NW:Widget>(&mut self, id: u16, w: &NW) where NW::State: StateT{
 		{
 			self.c.push(id);
 
@@ -222,20 +227,15 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 /// the event receiver
 pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 	c: &'a mut Common<D>,
-	/// link to the parent context to emit events
-	emited: Vec<W::Event>,
+	pub  emited: Vec<W::Event>,
 	transform: Transform,
-	//TODO: optionaly also emit to parent
 }
 
 impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 	pub fn new(c: &'a mut Common<D>) -> EventContext<'a, D, W>{
-		println!("event context");
-
 		EventContext{
-			transform: Transform::normal(),
+			transform: c.be.current_transform(),
 			c: c,
-			//p: PhantomData,
 			emited: Vec::new(),
 		}
 	}
@@ -252,8 +252,22 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 
 	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self,x1:f32,y1:f32,x2:f32,y2:f32, f: F){
 		//use EventContext itsselve as EventHandle
+		let mut t = self.c.be.current_transform();
+		assert_eq!(t, self.transform);
+		let p1 = t.point(x1, y1);
+		let p2 = t.point(x2, y2);
+
+		let p = Pos{
+			x:self.c.mouse_pos.0,
+			y:self.c.mouse_pos.1
+		};
+		if !(p1.0 <= p.x && p1.1 <= p.y && p2.0 >= p.x && p2.1 >= p.y){
+			//println!("not in box {:?}", (p, p1, p2, t));
+			return;
+		}
+		//println!("is in the box {:?}", (p, p1, p2));
 		let s:&mut EventHandle<W> = self;
-		(f)(Pos{x:10.,y:10.}, s);
+		(f)(p, s);
 	}
 
 	fn id(&self) -> ID{
@@ -267,19 +281,18 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 	}
 
 	fn transform(&mut self, t:Transform){
-		self.c.be.set_transform(t*self.transform);
+		unimplemented!()
+		//self.c.be.set_transform(t*self.transform);
 	}
 	fn translate(&mut self, x: f32, y: f32){
-		let mut ct = self.transform;
-		ct.translate(x,y);
-		self.c.be.set_transform(ct);
+		self.c.be.set_transform(self.transform.translate(x,y));
 		//println!("{:?}", self.c.be.current_transform());
 	}
 	fn reset(&mut self){
 		self.c.be.set_transform(self.transform);
 	}
 
-	fn add<NW:Widget<State=NS>,NS:StateT>(&mut self, id: u16, w: &NW){
+	fn add<NW:Widget>(&mut self, id: u16, w: &NW) where NW::State: StateT{
 		{
 			self.c.push(id);
 
@@ -291,35 +304,37 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		self.c.pop();
 	}
 
-	fn awe<NW:Widget<State=NS>,NS:StateT,L:Fn(&NW::Event, &mut EventHandle<W>)>
-		(&mut self, id: u16, w: &NW, f:L){
+	fn awe<NW:Widget,L:Fn(&NW::Event, &mut EventHandle<W>)>
+		(&mut self, id: u16, w: &NW, f:L) where NW::State: StateT{
+		println!("{:?}", NW::name());
 		let emited = {
 			self.c.push(id);
-			println!("awe: {:?}  //event context", W::name());
+			//println!("awe: {:?}  //event context", W::name());
 
-			let mut c:EventContext<D, NW> = EventContext{
-				transform: Transform::normal(),
-				c: self.c,
-				//p: PhantomData,
-				emited: Vec::new(),
-			};
+			let mut c:EventContext<D, NW> = EventContext::new(self.c);
 			let d = Default::default();
 			w.render(&mut c, &d);
 			c.reset();
 			c.emited
 		};
 		self.c.pop();
+		/*{
+			use std::intrinsics;
 
-		println!("emited: {:?}", emited.len());
+			println!("name: {:?}, State:{:?}, Event:{:?}", W::name(), unsafe{
+				intrinsics::type_name::<W::State>()
+			},unsafe{
+				intrinsics::type_name::<W::Event>()
+			});
+		}*/
 		for e in emited.iter(){//call the event handler for each event
-			(f)(e, self);
+			(f)(e, self as &mut EventHandle<W>);
 		}
 	}
 }
 
-impl<'a, D:Backend, W:Widget<State=S>,S:StateT>EventHandle<W> for EventContext<'a, D, W>{
-	fn emit(&mut self, e: W::Event){
-		println!("emit");
+impl<'a, D:Backend, W:Widget<State=S,Event=E>,S:StateT, E>EventHandle<W> for EventContext<'a, D, W>{
+	fn emit(&mut self, e: E){
 		self.emited.push(e);
 	}
 }

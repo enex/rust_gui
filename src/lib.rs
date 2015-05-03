@@ -26,6 +26,8 @@ use draw::{Path, PathInstr, AsPath};
 use std::any::Any;
 use context::StateT;
 use glutin::Event;
+use std::ops::Deref;
+use std::intrinsics;
 
 pub mod context;
 #[macro_use]
@@ -76,8 +78,12 @@ impl fmt::Debug for ID{
 	}
 }
 impl ID{
-	fn null() -> ID{
+	pub fn null() -> ID{
 		ID([0;12])
+	}
+	/// whether it is the id of the root node
+	pub fn is_root(&self) -> bool{
+		self.0[0] == 0
 	}
 }
 
@@ -161,10 +167,10 @@ pub trait Widget{
 	/// The state of this widget if the widget has no state, nothing has
 	/// to b done, the state type has to implement the default trait and
 	/// it will have the dafault value when accessed first.
-	type State: Any + Default;
+	type State: Any + Default = ();
 
 	/// the event the widget returns. This is a enum most of the times.
-	type Event;
+	type Event = ();
 
 	/// In this function only rendering to the screen and atouching event listeners is done
 	/// the state of the component gets passed as a imutable reference, so this rutine is not
@@ -185,7 +191,11 @@ pub trait Widget{
 	fn init(){}
 
 	/// the name of the widget, this is optional and for debuging
-	fn name() -> &'static str{""}
+	fn name() -> &'static str{
+		unsafe{
+			intrinsics::type_name::<Self>()
+		}
+	}
 
 	/// function to add a widget to the context.
 	fn draw<C:Context>(&self, c: &mut C, id: u16) where Self: Widget+Sized{
@@ -193,12 +203,19 @@ pub trait Widget{
 	}
 }
 
-/// evaluate the expression, then check for GL error.
-macro_rules! glcheck {
-	($e: expr) => ({
-		$e;
-		assert_eq!(unsafe {gl::GetError()}, 0);
-	})
+/// traite which should be implmented by everything used as ui state
+pub trait UIState<E>: StateT{
+	/// handle a event emited from the root component
+	fn handle(&mut self, e: E);
+}
+
+/// Trait possibly used for the context to add widgets, could abstract
+/// transformation
+pub trait Adder<T>{
+	fn add(&mut self, u16, &T);
+}
+pub trait AdderEvent<T>{
+	fn awe(&mut self, u16, &T);
 }
 
 /// this represents a whole app and contains the root widget
@@ -217,20 +234,18 @@ pub struct App<W,D:Backend>{
 	data: Common<D>,
 }
 
-impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
+impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 	pub fn new(window: glutin::Window, root:W) -> App<W, NanovgBackend>{
+		let (w, h) = match window.get_inner_size(){
+			Some(s) => s,
+			None => {
+				println!("was nat able to get inner sizer");
+				(0, 0)
+			}
+		};
 		App{
 			root: root,
-			size: {
-				let (w, h) = match window.get_inner_size(){
-					Some(s) => s,
-					None => {
-						println!("was nat able to get inner sizer");
-						(0, 0)
-					}
-				};
-				(w as i32, h as i32)
-			},
+			size: (w as i32, h as i32),
 			data: Common{
 				be: {
 					gl::load_with(|symbol| window.get_proc_address(symbol));
@@ -242,6 +257,10 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 				id: ID::null(),
 				transform: Transform::normal(),
 				listeners: Vec::new(),
+				event: Event::Resized(w, h),
+				affected: Vec::new(),
+				redraw: Vec::new(),
+				mouse_pos: (0.0, 0.0),
 			},
 			window: window,
 			begun: false,
@@ -257,7 +276,7 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 
 	/// start the application with a reference to the state, this will be passed
 	/// to the render function of the root component
-	pub fn show(&mut self, state: &S){
+	pub fn show(&mut self, state: &mut S){
 		self.data.be.load_font("sans", "res/Roboto-Regular.ttf");
 		self.data.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
 		self.data.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
@@ -271,20 +290,27 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 			};
 
 			match event{
-				Event::Resized(w, h) => {//handle resizes
+				Resized(w, h) => {//handle resizes
 					self.size.0 = w as i32;
 					self.size.1 = h as i32;
 					self.redraw = true;
 				},
-				Event::MouseInput(glutin::ElementState::Pressed, _) => {
-					//TODO: implement event handling
-					println!("mouse input");
-					let mut c:EventContext<NanovgBackend,W> = EventContext::new(&mut self.data);
+				MouseMoved((x,y)) => {
+					self.data.mouse_pos = (x as f32, y as f32);
+				},
+				MouseInput(..) | ReceivedCharacter(..) | MouseWheel(..) => {
+					self.data.event = event;
+					let mut c:EventContext<NanovgBackend, W> = EventContext::new(&mut self.data);
 					self.root.render(&mut c, state);
+					for e in c.emited{
+						state.handle(e);
+						self.redraw = true;
+					}
 				},
 				_ => ()
 			}
-			//println!("{:?}", event);
+			
+			self.data.be.reset_transform();
 			if self.redraw{
 				self.ps();
 				{
@@ -292,11 +318,12 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 						DrawContext::new(&mut self.data);
 					self.root.render(&mut c, state);
 				}
-				println!("draw ({}, {})", self.size.0, self.size.1);
+				//println!("draw ({}, {})", self.size.0, self.size.1);
 				self.redraw = false;
 
 				if self.begun{
 					self.data.be.end();
+					self.data.be.reset_transform();
 					self.window.swap_buffers();
 					self.begun = false;
 				}
@@ -304,17 +331,3 @@ impl<W:Widget<State=S,Event=E>,S:StateT,E> App<W, NanovgBackend>{
 		}
 	}
 }
-
-/*
-Idea
-
-Button::new("bla").fill(Color::blue()).text("Hello World").draw(c, 10)
-//vs
-Button{
-	fill: Some(Color::blue()),
-	text: "Hello World",
-	..c.default()
-}.draw(c, 10)
-//vs
-c.add(10, Button::new("bla").fill(Color::blue()).text("Hello World"))
-*/

@@ -72,7 +72,11 @@ impl<'a> Widget for Button<'a>{
 
     fn render<C: Context<TWidget=Button<'a>>>(&self, c: &mut C, s: &ButtonState) {
         //let hovered = c.hovered();
-        println!("draw_button  {:?}", self);
+        //println!("draw_button  {:?}", self);
+        c.on_click(0.,0.,self.width,self.height,|pos, h| {
+            println!("Button !clicked at {:?}", pos);
+            h.emit(ButtonEvent::Click);
+        });
 
         let p = Path::rect(0.,0.,self.width,self.height)
             .stroke(1., Color::rgb(180,180,180));
@@ -90,10 +94,6 @@ impl<'a> Widget for Button<'a>{
             ..c.default()
         };
         c.add(1, &l);
-        c.on_click(0.,0.,self.width,self.height,|pos, h| {
-            println!("Button !clicked at {:?}", pos);
-            h.emit(ButtonEvent::Click);
-        });
 
         //TODO: if focused make click on enter
         //TODO: draw label
@@ -101,5 +101,5 @@ impl<'a> Widget for Button<'a>{
         //TODO: tooltip
     }
 
-    fn name() -> &'static str{"Button"}
+    //fn name() -> &'static str{"rui::componeButton"}
 }

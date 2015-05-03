@@ -24,54 +24,59 @@ impl Transform{
 	}
 
 	/// Sets the transform to translation matrix
-	pub fn translate(&mut self, x: f32, y:f32) {
-		self.0[4] += x;
-		self.0[5] += y;
+	pub fn translate(&self, x: f32, y:f32) -> Transform {
+		let mut t = self.0.clone();
+		t[4] += x;
+		t[5] += y;
+		Transform(t)
 	}
 	/// Sets the transform to scale matrix.
-	pub fn scale(&mut self, x: f32, y: f32) {
-        let mut t = self.0;
-        t[0] = x; t[1] = 0.0;
-        t[2] = 0.0; t[3] = y;
-        t[4] = 0.0; t[5] = 0.0;
+	pub fn scale(&self, x: f32, y: f32) -> Transform {
+		Transform([
+			x,   0.0,
+			0.0, y,
+			0.0, 0.0
+		])
 	}
 	/// Sets the transform to rotate matrix. Angle is specified in radians
-	pub fn rotate(&mut self, a: f32){
-        let mut t = self.0;
+	pub fn rotate(&mut self, a: f32) -> Transform{
 		let cs = a.cos();
         let sn = a.sin();
-		t[0] = cs; t[1] = sn;
-		t[2] = -sn; t[3] = cs;
-		t[4] = 0.0; t[5] = 0.0;
+		Transform([
+			cs,  sn,
+			-sn, cs,
+			0.0, 0.0
+		])
 	}
 	/// Sets the transform to skew-x matrix. Angle is specified in radians
-	pub fn skew_x(&mut self, a: f32){
-        let mut t = self.0;
-		t[0] = 1.0; t[1] = 0.0;
-		t[2] = a.tan(); t[3] = 1.0;
-		t[4] = 0.0; t[5] = 0.0;
+	pub fn skew_x(&mut self, a: f32) -> Transform{
+		Transform([
+			1.0,     0.0,
+			a.tan(), 1.0,
+			0.0,     0.0
+		])
 	}
 	/// Sets the transform to skew-y matrix. Angle is specified in radians
-	pub fn skew_y(&mut self, a: f32){
-        let mut t = self.0;
-		t[0] = 1.0; t[1] = a.tan();
-		t[2] = 0.0; t[3] = 1.0;
-		t[4] = 0.0; t[5] = 0.0;
+	pub fn skew_y(&mut self, a: f32) -> Transform{
+		Transform([
+			1.0, a.tan(),
+			0.0, 1.0,
+			0.0, 0.0
+		])
 	}
 	/// Sets the transform to the result of multiplication of two transforms, of A = A*B
-	pub fn multiply(&mut self, s: Transform){
+	pub fn multiply(&mut self, s: Transform) -> Transform{
 		let mut t = self.0;
 		let s = s.0;
 
-		let t0 = t[0] * s[0] + t[1] * s[2];
-		let t2 = t[2] * s[0] + t[3] * s[2];
-		let t4 = t[4] * s[0] + t[5] * s[2] + s[4];
-		t[1] = t[0] * s[1] + t[1] * s[3];
-		t[3] = t[2] * s[1] + t[3] * s[3];
-		t[5] = t[4] * s[1] + t[5] * s[3] + s[5];
-		t[0] = t0;
-		t[2] = t2;
-		t[4] = t4;
+		Transform([
+			t[0] * s[0] + t[1] * s[2],
+			t[0] * s[1] + t[1] * s[3],
+			t[2] * s[0] + t[3] * s[2],
+			t[2] * s[1] + t[3] * s[3],
+			t[4] * s[0] + t[5] * s[2] + s[4],
+			t[4] * s[1] + t[5] * s[3] + s[5]
+		])
 	}
 	/// Sets the transform to the result of multiplication of two transforms, of A = B*A
 	pub fn premultiply(&mut self, s: Transform){
