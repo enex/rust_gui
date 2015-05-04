@@ -296,6 +296,9 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					self.size.0 = w as i32;
 					self.size.1 = h as i32;
 					self.redraw = true;
+					unsafe{//make sure resize does'n result in stretching and displacement
+						gl::Viewport(0, 0, self.size.0, self.size.1);
+					}
 				},
 				MouseMoved((x,y)) => {
 					self.data.mouse_pos = (x as f32, y as f32);
@@ -310,7 +313,7 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					}
 				},
 				Refresh => { self.redraw = true; },
-				_ => ()
+				//_ => ()
 			}
 			
 			self.data.be.reset_transform();
