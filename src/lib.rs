@@ -313,6 +313,11 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					}
 				},
 				Refresh => { self.redraw = true; },
+				Moved(_, _) => (),
+				Closed => (),
+				Focused(_) => (),
+				KeyboardInput(_, _, _) => (),
+				Awakened => (),
 				//_ => ()
 			}
 			

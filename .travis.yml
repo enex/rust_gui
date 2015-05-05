@@ -2,8 +2,10 @@ language: rust
 
 before_install:
  - sudo add-apt-repository --yes "ppa:codegear/release"
+ - sudo apt-get-repository --yes "ppa:keithw/glfw3"
  - sudo apt-get update -qq
  - sudo apt-get -qq --yes install premake4
+ - sudo apt-get -qq --yes install glfw3
 
 os:
 - linux
