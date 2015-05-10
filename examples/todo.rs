@@ -262,5 +262,11 @@ fn main(){
 
 	unsafe { window.make_current() };//make it active
 
-	App::new(window, TodoApp).show(&mut state);
+	let mut app = App::new(window, TodoApp)
+	
+	app.load_font("sans", "res/Roboto-Regular.ttf").unwrap();
+	app.load_font("font-awesome", "res/fontawesome-webfont.ttf").unwrap();
+	app.load_font("sans-bold", "res/Roboto-Bold.ttf").unwrap();
+	
+	app.show(&mut state);
 }

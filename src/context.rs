@@ -8,7 +8,7 @@ use std::default::Default;
 use Backend;
 use Transform;
 use draw::AsPath;
-use glutin::Event;
+use glutin::{Event, ElementState, VirtualKeyCode};
 
 /// representing a position, can be returned as value form on_click for example
 #[derive(Clone, Debug, Default, Copy)]
@@ -94,6 +94,17 @@ pub trait Context{
 	/// register event listener for click event
 	fn on_click<F:Fn(Pos, &mut EventHandle<Self::TWidget>)>
 		(&mut self, _:f32, _:f32, _:f32, _:f32, _: F){}
+	
+	/// register event listener for key event
+	fn on_key<F:Fn(ElementState, Option<VirtualKeyCode>, &mut EventHandle<Self::TWidget>)>
+		(&mut self, _: F){}
+	
+	/// register event listener for key char event
+	fn on_char<F:Fn(char, &mut EventHandle<Self::TWidget>)>
+		(&mut self, _: F){}
+	
+	/// whether the context realy draws, this can be used to optimize drawing
+	fn is_drawing(&self) -> bool{ false }
 }
 
 #[derive(Debug, Clone)]
@@ -217,6 +228,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for DrawContext<'a, D, W>
 		self.c.listeners.push((self.c.id, EventFilter::Mouse(p.0,p.1,w,h)));
 		//println!("register event listener {:?} {:?} {:?}", self.c.id,((x,y), (w,h)), p);
 	}
+	fn is_drawing(&self) -> bool{ true }
 }
 
 
@@ -269,6 +281,27 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		let s:&mut EventHandle<W> = self;
 		(f)(p, s);
 	}
+	fn on_key<F:Fn(ElementState, Option<VirtualKeyCode>, &mut EventHandle<Self::TWidget>)>
+		(&mut self, f: F){
+		match self.c.event{
+			Event::KeyboardInput(es, _ , vkc) => {
+				let s:&mut EventHandle<W> = self;
+				(f)(es, vkc, s);
+			},
+			_ => ()
+		}
+	}
+	
+	fn on_char<F:Fn(char, &mut EventHandle<Self::TWidget>)>
+		(&mut self, f: F){
+		match self.c.event{
+			Event::ReceivedCharacter(c) => {
+				let s:&mut EventHandle<W> = self;
+				(f)(c, s);
+			},
+			_ => ()
+		}
+	}
 
 	fn id(&self) -> ID{
 		self.c.id
@@ -306,7 +339,6 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 
 	fn awe<NW:Widget,L:Fn(&NW::Event, &mut EventHandle<W>)>
 		(&mut self, id: u16, w: &NW, f:L) where NW::State: StateT{
-		println!("{:?}", NW::name());
 		let emited = {
 			self.c.push(id);
 			//println!("awe: {:?}  //event context", W::name());
@@ -320,14 +352,14 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		self.c.pop();
 		/*{
 			use std::intrinsics;
-
+			
 			println!("name: {:?}, State:{:?}, Event:{:?}", W::name(), unsafe{
 				intrinsics::type_name::<W::State>()
 			},unsafe{
 				intrinsics::type_name::<W::Event>()
 			});
 		}*/
-		for e in emited.iter(){//call the event handler for each event
+		for e in emited.iter(){// call the event handler for each event
 			(f)(e, self as &mut EventHandle<W>);
 		}
 	}

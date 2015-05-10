@@ -44,5 +44,9 @@ fn main(){
 
 	unsafe { window.make_current() };//make it active
 
-	App::new(window, MyApp).show(&mut ());
+	let mut app = App::new(window, MyApp);
+	app.load_font("sans", "res/Roboto-Regular.ttf").unwrap();
+	app.load_font("font-awesome", "res/fontawesome-webfont.ttf").unwrap();
+	app.load_font("sans-bold", "res/Roboto-Bold.ttf").unwrap();
+	app.show(&mut ());
 }

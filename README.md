@@ -113,7 +113,7 @@ Button{
 
 ## Screenshots
 
-![all_widgets example](./screenshot_all_widgets.png)
+![rust ide](./IDE.png)
 
 ## Links
  - https://github.com/reem/rust-typemap

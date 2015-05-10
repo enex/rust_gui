@@ -21,8 +21,12 @@ impl NanovgBackend{
 }
 
 impl Backend for NanovgBackend{
-    fn load_font(&mut self, name: &str, path: &str){
-        self.fonts.push(self.vg.create_font(name, path).unwrap())
+    fn load_font(&mut self, name: &str, path: &str) -> Result<(), ()>{
+        self.fonts.push(match self.vg.create_font(name, path){
+			Some(o) => o,
+			None => return Err(())
+        });
+        Ok(())
     }
 
     fn transform(&mut self, t: Transform){

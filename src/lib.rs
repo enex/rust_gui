@@ -11,6 +11,7 @@ extern crate libc;
 extern crate glutin;
 extern crate nanovg;
 extern crate gl;
+extern crate time;
 
 pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::{Context, DrawContext, EventContext, Common};
@@ -99,7 +100,7 @@ pub trait Backend{
 	/// load a font form a given path and make it available for later use
 	/// if it is called with the same font more than one time nothing
 	/// should happen
-	fn load_font(&mut self, &str, &str);
+	fn load_font(&mut self, &str, &str) -> Result<(),()>;
 	fn find_font(&self, name: &str) -> Option<Font>;
 	fn font_face(&mut self, font: &str);
 	fn font_size(&mut self, size: f32);
@@ -269,6 +270,9 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 			redraw: true,
 		}
 	}
+	pub fn load_font(&mut self, name: &str, path: &str) -> Result<(),()>{
+		self.data.be.load_font(name, path)
+	}
 
 	/// start drawing process if not alerady started
 	fn ps(&mut self){
@@ -279,18 +283,18 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 	/// start the application with a reference to the state, this will be passed
 	/// to the render function of the root component
 	pub fn show(&mut self, state: &mut S){
-		self.data.be.load_font("sans", "res/Roboto-Regular.ttf");
-		self.data.be.load_font("font-awesome", "res/fontawesome-webfont.ttf");
-		self.data.be.load_font("sans-bold", "res/Roboto-Bold.ttf");
-
 		while !self.window.is_closed() {
 			use glutin::Event::*;
-
+			
+			
+			
 			let event = match self.window.wait_events().next(){
 				Some(e) => e,
 				None => break
 			};
-
+			
+			let start = time::PreciseTime::now();
+			
 			match event{
 				Resized(w, h) => {//handle resizes
 					self.size.0 = w as i32;
@@ -301,9 +305,11 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					}
 				},
 				MouseMoved((x,y)) => {
+					//TODO: also use this o listen for events
 					self.data.mouse_pos = (x as f32, y as f32);
 				},
-				MouseInput(..) | ReceivedCharacter(..) | MouseWheel(..) => {
+				MouseInput(..) | ReceivedCharacter(..) | MouseWheel(..) |
+				KeyboardInput(_, _, _) => {
 					self.data.event = event;
 					let mut c:EventContext<NanovgBackend, W> = EventContext::new(&mut self.data);
 					self.root.render(&mut c, state);
@@ -316,13 +322,15 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 				Moved(_, _) => (),
 				Closed => (),
 				Focused(_) => (),
-				KeyboardInput(_, _, _) => (),
 				Awakened => (),
-				//_ => ()
 			}
+			
+			let end = time::PreciseTime::now();
+			println!("event handling took: {} µs", start.to(end).num_microseconds().unwrap());
 			
 			self.data.be.reset_transform();
 			if self.redraw{
+				let start = time::PreciseTime::now();
 				self.ps();
 				{
 					let mut c:DrawContext<NanovgBackend, W> =
@@ -338,6 +346,8 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 					self.window.swap_buffers();
 					self.begun = false;
 				}
+				let end = time::PreciseTime::now();
+				println!("drawing took: {} ms", start.to(end).num_milliseconds());
 			}
 		}
 	}
