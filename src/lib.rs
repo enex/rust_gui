@@ -9,26 +9,22 @@
 
 extern crate libc;
 extern crate glutin;
-extern crate nanovg;
 extern crate gl;
 extern crate time;
 
 pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::{Context, DrawContext, EventContext, Common};
-pub use nanovg::{Color, Font};
+pub use color::Color;
 pub use transform::Transform;
 
 use std::fmt;
 use state::State;
 use std::default::Default;
-use nanovg::Ctx;
-use nanovg_backend::NanovgBackend;
-use draw::{Path, PathInstr, AsPath};
 use std::any::Any;
 use context::StateT;
 use glutin::Event;
-use std::ops::Deref;
 use std::intrinsics;
+use backend::Backend;
 
 pub mod context;
 #[macro_use]
@@ -36,18 +32,35 @@ pub mod components;
 #[macro_use]
 pub mod draw;
 pub mod primitives;
-pub mod nanovg_backend;
 pub mod transform;
+pub mod color;
 //pub mod debug;
 mod state;
+pub mod backend;
 
 #[macro_use]
 mod macros;
+
+pub trait ColorTrait{
+	fn rgb(r: u8, g: u8, b: u8) -> Self;
+}
+impl ColorTrait for Color{
+	fn rgb(r: u8, g: u8, b: u8) -> Self{
+		Color{
+			r: r as f32,
+			g: g as f32,
+			b: b as f32,
+			a: 1.
+		}
+	}
+}
 
 pub mod prelude{
 	//! this is a bundle of the things most frequently needed
 	//!
 	//! 	use rui::prelude::*;
+	//!
+	//! it also includes glutin
 
 	pub use primitives;
 	pub use Widget;
@@ -57,6 +70,7 @@ pub mod prelude{
 	pub use context::{EventHandle, StateT};
 	pub use App;
 	pub use Color;
+	pub use glutin;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -90,76 +104,6 @@ impl ID{
 
 //TODO: maybe change ID type
 //TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
-
-/// Backend which should be implemented to support drawing operations
-/// the first backend will be cairo + OpenGL but other backends should follow
-pub trait Backend{
-	/// start drawing the path. The size of the Frame is provided.
-	fn begin(&mut self, _:i32, _:i32){}
-
-	/// load a font form a given path and make it available for later use
-	/// if it is called with the same font more than one time nothing
-	/// should happen
-	fn load_font(&mut self, &str, &str) -> Result<(),()>;
-	fn find_font(&self, name: &str) -> Option<Font>;
-	fn font_face(&mut self, font: &str);
-	fn font_size(&mut self, size: f32);
-	fn font_color(&mut self, color: Color);
-    fn text(&self, x: f32, y: f32, text: &str) -> f32;
-
-	fn reset_transform(&mut self);
-	fn transform(&mut self, Transform);
-	fn set_transform(&mut self, t: Transform){
-		self.reset_transform();
-		self.transform(t);
-	}
-	fn current_transform(&self) -> Transform;
-
-	fn draw_path<P:AsPath>(&mut self, P);
-
-	//drawing primitives
-	fn draw_line(&mut self, line: primitives::Line){
-		self.draw_path(path!(
-			M:line.x1,line.y1;
-			L:line.x2,line.y2
-		));
-	}
-	/// draw a rectangle
-	fn draw_rect(&mut self, rect: primitives::Rect){
-		self.draw_path(path!(M:rect.x,rect.y;
-			L:(rect.x+rect.width),rect.y;
-			L:(rect.x+rect.width),(rect.y+rect.height);
-			L:rect.x,(rect.y+rect.height);
-			Z:
-		));
-	}
-	/// draw a circle
-	fn draw_circle(&mut self, primitives::Circle){
-		//TODO: implement it with draw_path
-		unimplemented!()
-	}
-	/// draw a polygon
-	fn draw_polygon(&mut self, pg: primitives::Polygon){
-		let mut p = primitives::Path::new();
-		let mut first = true;
-
-		for c in pg.cords.iter(){
-			if first{
-				p.move_to(c.0, c.1);
-				first = false;
-			}else{
-				p.line_to(c.0, c.1);
-			}
-		}
-
-		p.close_path();
-		self.draw_path(p);
-	}
-
-
-	/// end of the drawing operation for one frame
-	fn end(&mut self){}
-}
 
 /// the trait implemented by all widgets displayed.
 /// A widget can eather have state, in which case it gets its own frame-buffer
@@ -204,7 +148,7 @@ pub trait Widget{
 	}
 }
 
-/// traite which should be implmented by everything used as ui state
+/// trait which should be implmented by everything used as ui state
 pub trait UIState<E>: StateT{
 	/// handle a event emited from the root component
 	fn handle(&mut self, e: E);
@@ -212,7 +156,7 @@ pub trait UIState<E>: StateT{
 impl UIState<()> for (){
 	fn handle(&mut self, _:()){}
 }
-/// Trait possibly used for the context to add widgets, could abstract
+/// trait possibly used for the context to add widgets, could abstract
 /// transformation
 pub trait Adder<T>{
 	fn add(&mut self, u16, &T);
@@ -237,8 +181,8 @@ pub struct App<W,D:Backend>{
 	data: Common<D>,
 }
 
-impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
-	pub fn new(window: glutin::Window, root:W) -> App<W, NanovgBackend>{
+impl<W:Widget<State=S,Event=E>,S:UIState<E>, E, D:Backend> App<W, D>{
+	pub fn new(window: glutin::Window, root:W) -> App<W, D>{
 		let (w, h) = match window.get_inner_size(){
 			Some(s) => s,
 			None => {
@@ -252,8 +196,7 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 			data: Common{
 				be: {
 					gl::load_with(|symbol| window.get_proc_address(symbol));
-					let vg = Ctx::create_gl3(nanovg::ANTIALIAS | nanovg::STENCIL_STROKES);
-					NanovgBackend::new(vg)
+					D::new(&window)
 				},
 				state: State::new(),
 				depth: 0,
@@ -270,6 +213,9 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 			redraw: true,
 		}
 	}
+
+	/// load a font which is then available with the specified name. If the font
+	/// could not be loaded, an error will be returned.
 	pub fn load_font(&mut self, name: &str, path: &str) -> Result<(),()>{
 		self.data.be.load_font(name, path)
 	}
@@ -285,16 +231,14 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 	pub fn show(&mut self, state: &mut S){
 		while !self.window.is_closed() {
 			use glutin::Event::*;
-			
-			
-			
+
 			let event = match self.window.wait_events().next(){
 				Some(e) => e,
 				None => break
 			};
-			
+
 			let start = time::PreciseTime::now();
-			
+
 			match event{
 				Resized(w, h) => {//handle resizes
 					self.size.0 = w as i32;
@@ -311,7 +255,7 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 				MouseInput(..) | ReceivedCharacter(..) | MouseWheel(..) |
 				KeyboardInput(_, _, _) => {
 					self.data.event = event;
-					let mut c:EventContext<NanovgBackend, W> = EventContext::new(&mut self.data);
+					let mut c:EventContext<D, W> = EventContext::new(&mut self.data);
 					self.root.render(&mut c, state);
 					for e in c.emited{
 						state.handle(e);
@@ -324,16 +268,16 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E> App<W, NanovgBackend>{
 				Focused(_) => (),
 				Awakened => (),
 			}
-			
+
 			let end = time::PreciseTime::now();
-			println!("event handling took: {} µs", start.to(end).num_microseconds().unwrap());
-			
+			println!("event handling took: {}", start.to(end).num_milliseconds());
+
 			self.data.be.reset_transform();
 			if self.redraw{
 				let start = time::PreciseTime::now();
 				self.ps();
 				{
-					let mut c:DrawContext<NanovgBackend, W> =
+					let mut c:DrawContext<D, W> =
 						DrawContext::new(&mut self.data);
 					self.root.render(&mut c, state);
 				}

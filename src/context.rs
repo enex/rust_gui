@@ -5,7 +5,7 @@ use std::any::Any;
 use state::State as AppState;
 use std::marker::PhantomData;
 use std::default::Default;
-use Backend;
+use backend::Backend;
 use Transform;
 use draw::AsPath;
 use glutin::{Event, ElementState, VirtualKeyCode};
@@ -163,7 +163,7 @@ pub struct DrawContext<'a, D:Backend, W:Widget> where D:'a{
 impl<'a, D:Backend, W:Widget<State=S>,S:StateT> DrawContext<'a, D, W>{
 	pub fn new(c: &'a mut Common<D>) -> DrawContext<'a, D, W>{
 		DrawContext{
-			transform: c.be.current_transform(),
+			transform: c.be.get_transform(),
 			c:c,
 			e: PhantomData,
 		}
@@ -246,7 +246,7 @@ pub struct EventContext<'a, D:Backend, W:Widget> where D:'a{
 impl<'a, D:Backend, W:Widget> EventContext<'a, D, W>{
 	pub fn new(c: &'a mut Common<D>) -> EventContext<'a, D, W>{
 		EventContext{
-			transform: c.be.current_transform(),
+			transform: c.be.get_transform(),
 			c: c,
 			emited: Vec::new(),
 		}
@@ -264,7 +264,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 
 	fn on_click<F:Fn(Pos, &mut EventHandle<W>)>(&mut self,x1:f32,y1:f32,x2:f32,y2:f32, f: F){
 		//use EventContext itsselve as EventHandle
-		let mut t = self.c.be.current_transform();
+		let mut t = self.c.be.get_transform();
 		assert_eq!(t, self.transform);
 		let p1 = t.point(x1, y1);
 		let p2 = t.point(x2, y2);
@@ -312,19 +312,15 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 	fn hovered(&self) -> bool{
 		self.c.state.hovered == self.id()
 	}
-
 	fn transform(&mut self, t:Transform){
 		unimplemented!()
-		//self.c.be.set_transform(t*self.transform);
 	}
 	fn translate(&mut self, x: f32, y: f32){
 		self.c.be.set_transform(self.transform.translate(x,y));
-		//println!("{:?}", self.c.be.current_transform());
 	}
 	fn reset(&mut self){
 		self.c.be.set_transform(self.transform);
 	}
-
 	fn add<NW:Widget>(&mut self, id: u16, w: &NW) where NW::State: StateT{
 		{
 			self.c.push(id);
@@ -336,7 +332,6 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 		}
 		self.c.pop();
 	}
-
 	fn awe<NW:Widget,L:Fn(&NW::Event, &mut EventHandle<W>)>
 		(&mut self, id: u16, w: &NW, f:L) where NW::State: StateT{
 		let emited = {
@@ -350,15 +345,7 @@ impl<'a, D:Backend, W:Widget<State=S>,S:StateT>Context for EventContext<'a, D, W
 			c.emited
 		};
 		self.c.pop();
-		/*{
-			use std::intrinsics;
-			
-			println!("name: {:?}, State:{:?}, Event:{:?}", W::name(), unsafe{
-				intrinsics::type_name::<W::State>()
-			},unsafe{
-				intrinsics::type_name::<W::Event>()
-			});
-		}*/
+
 		for e in emited.iter(){// call the event handler for each event
 			(f)(e, self as &mut EventHandle<W>);
 		}

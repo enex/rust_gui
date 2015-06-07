@@ -19,15 +19,15 @@ macro_rules! setter{
 
 //pub use self::layout::{Row, Col, Layout};
 
-pub use self::button::{Button, ButtonEvent};
-pub use self::label::Label;
+//pub use self::button::{Button, ButtonEvent};
+//pub use self::label::Label;
 
 //pub use self::image::Icon;
 //pub use self::slider::{Slider, SliderEvent};
 //pub use self::checkbox::{Checkbox, CheckboxEvent};
 //pub use self::text_input::{TextInput, TextInputEvent};
-pub use self::icon::Icon;
-pub use self::icon::fa;
+//pub use self::icon::Icon;
+//pub use self::icon::fa;
 
 //pub mod image;
 //pub mod text_input;
@@ -37,7 +37,7 @@ pub use self::icon::fa;
 //pub mod checkbox;
 //pub mod layout;
 //#[macro_use]
-pub mod button;
-pub mod label;
+//pub mod button;
+//pub mod label;
 
-pub mod icon;
+//pub mod icon;

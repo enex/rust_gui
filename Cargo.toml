@@ -12,5 +12,4 @@ description = "reactiv rust ui  a ReactJS like UI library"
 [dependencies]
 glutin = "*"
 gl = "*"
-nanovg = "*"
 time = "*"

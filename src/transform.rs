@@ -12,7 +12,7 @@ impl Transform{
 	}
 	/// normal transformation matrix
 	///
-	/// 	[1, 0, 0, 1, 0, 0]
+	/// `[1, 0, 0, 1, 0, 0]`
 	pub fn normal() -> Transform{
 		Transform([1., 0., 0., 1., 0., 0.])
 	}
@@ -66,7 +66,7 @@ impl Transform{
 	}
 	/// Sets the transform to the result of multiplication of two transforms, of A = A*B
 	pub fn multiply(&mut self, s: Transform) -> Transform{
-		let mut t = self.0;
+		let t = self.0;
 		let s = s.0;
 
 		Transform([
@@ -87,7 +87,7 @@ impl Transform{
 	/// Sets the destination to inverse of specified transform.
     /// Returns true if the inverse could be calculated, else false.
 	pub fn inverse(&mut self, a:Transform) -> bool{
-        let mut t = self.0;
+        let t = self.0;
         let t = [
             (t[0] as f64),
             (t[1] as f64),
@@ -184,6 +184,7 @@ fn test_transform_add(){
 	let b = Transform([6., 5., 4., 3., 2., 1.]);
 	assert_eq!(a+b, Transform([7.;6]));
 }
+#[test]
 fn test_mulitply(){
 	//let a = Transform::translated(100.,50.);
 	//let b = Transform::translated(20., 40.);

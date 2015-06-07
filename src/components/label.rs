@@ -2,7 +2,7 @@ use Widget;
 use Context;
 use Color;
 use std::default::Default;
-use nanovg::{LEFT,RIGHT,TOP,BOTTOM,MIDDLE, Font, Image, Ctx};
+//use nanovg::{LEFT,RIGHT,TOP,BOTTOM,MIDDLE, Font, Image, Ctx};
 use Backend;
 
 pub struct Label<'a>{
