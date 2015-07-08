@@ -6,18 +6,63 @@
 /*!
 [repository](https://github.com/enex/rust_gui)
 */
+pub mod new_version;
+//extern crate time;
+//extern crate piston;
+//extern crate graphics;
+//extern crate glutin_window;
+//extern crate glium_graphics;
 
-extern crate libc;
-extern crate glutin;
-extern crate gl;
-extern crate time;
+//use std::cell::RefCell;
+//use std::rc::Rc;
+//use std::path::Path;
+//use piston::window::{ WindowSettings, Size };
+//use piston::event::*;
+//use glium_graphics::{ GliumGraphics, Glium2d, GliumWindow, GlyphCache };
+//use glutin_window::{ GlutinWindow, OpenGL };
 
+//use std::fmt;
+/*
+/// the ID that is used to identify the widgets. This way it is possible to save the state
+/// from one draw to another draw.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ID (pub [u16;12]);
+impl fmt::Debug for ID{
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
+		let mut first = true;
+		try!(write!(f,"$"));
+		for i in self.0.iter(){
+			if *i == 0{
+				break;
+			}
+			if !first{
+				try!(write!(f,"-"));
+			}
+			try!(write!(f, "{}", i));
+			first = false;
+		}
+		Ok(())
+	}
+}
+impl ID{
+	/// create a id initialized with only null values
+	pub fn null() -> ID{
+		ID([0;12])
+	}
+	/// whether it is the id of the root node
+	pub fn is_root(&self) -> bool{
+		self.0[0] == 0
+	}
+}
+*/
+//TODO: maybe change ID type
+//TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
+/*
 pub use glutin::{MouseCursor, MouseButton, VirtualKeyCode, Api, WindowBuilder};
 pub use context::{Context, DrawContext, EventContext, Common};
 pub use color::Color;
 pub use transform::Transform;
 
-use std::fmt;
 use state::State;
 use std::default::Default;
 use std::any::Any;
@@ -29,9 +74,6 @@ use backend::Backend;
 pub mod context;
 #[macro_use]
 pub mod components;
-#[macro_use]
-pub mod draw;
-pub mod primitives;
 pub mod transform;
 pub mod color;
 //pub mod debug;
@@ -73,37 +115,7 @@ pub mod prelude{
 	pub use glutin;
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ID (pub [u16;12]);
-impl fmt::Debug for ID{
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result{
-		let mut first = true;
-		try!(write!(f,"$"));
-		for i in self.0.iter(){
-			if *i == 0{
-				break;
-			}
-			if !first{
-				try!(write!(f,"-"));
-			}
-			try!(write!(f, "{}", i));
-			first = false;
-		}
-		Ok(())
-	}
-}
-impl ID{
-	pub fn null() -> ID{
-		ID([0;12])
-	}
-	/// whether it is the id of the root node
-	pub fn is_root(&self) -> bool{
-		self.0[0] == 0
-	}
-}
 
-//TODO: maybe change ID type
-//TODO: use an array like [u8; 16] for storing keys encoded like 0x[one or two byes][the rest]
 
 /// the trait implemented by all widgets displayed.
 /// A widget can eather have state, in which case it gets its own frame-buffer
@@ -156,6 +168,7 @@ pub trait UIState<E>: StateT{
 impl UIState<()> for (){
 	fn handle(&mut self, _:()){}
 }
+
 /// trait possibly used for the context to add widgets, could abstract
 /// transformation
 pub trait Adder<T>{
@@ -295,4 +308,4 @@ impl<W:Widget<State=S,Event=E>,S:UIState<E>, E, D:Backend> App<W, D>{
 			}
 		}
 	}
-}
+}*/

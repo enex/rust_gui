@@ -10,6 +10,19 @@ homepage = "https://github.com/enex/rust_gui"
 description = "reactiv rust ui  a ReactJS like UI library"
 
 [dependencies]
-glutin = "*"
-gl = "*"
-time = "*"
+#freetype-rs = "0.1.0"
+#image = "0.3.10"
+#piston-shaders_graphics2d = "0.1.0"
+#piston2d-graphics = "0.1.4"
+#pistoncore-window = "0.1.2"
+#shader_version = "0.1.0"
+#piston2d-glium_graphics = "0.1.0"
+#time = "*"
+#piston = "0.1.3"
+#pistoncore-glutin_window = "0.1.0"
+#read_color = "*"
+
+#[dependencies.glium]
+#version = "0.5"
+#features = ["image"]
+#default_features = false
