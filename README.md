@@ -1,4 +1,7 @@
-# GUI for Rust [![Build Status](https://travis-ci.org/enex/rust_gui.svg?branch=master)](https://travis-ci.org/enex/rust_gui)
+# GUI for Rust 
+
+[![Crates.io](https://img.shields.io/crates/v/rui.svg?style=flat-square)]
+[![Build Status](https://travis-ci.org/enex/rust_gui.svg?branch=master)](https://travis-ci.org/enex/rust_gui)
 
 You can finde a demo [here](https://youtu.be/G67LNLbnivw) and the code [here](./examples/todo.rs).
 
