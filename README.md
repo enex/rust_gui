@@ -126,3 +126,27 @@ Button{
  - https://github.com/reem/rust-typemap
  - https://github.com/TomBebbington/glutin
  - https://github.com/uil-lang/uil-rs
+
+## 
+```rust
+ctx.add(1, |default| animation(Mode::Linear, 0..100, |x| Button{ width: x ,..default })
+```
+```rust
+pub enum TimingFunction{
+	Linear,
+	Ease,
+	EaseIn,
+	EaseOut,
+	EaseInOut,
+	StepStart,
+	StepEnd
+}
+```
+
+All styles and some other configuration is provided by dependency injecten.
+This is implemented with a map that contains the TypeId as key and a value as
+Rc. The components can get the value by calling ctx.get<Type>(). This way config
+parameters can be passed. you can also config this context for child nodes by calling
+the appropriet setter.
+
+
